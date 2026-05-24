@@ -161,6 +161,7 @@ namespace Bonsai.Parquet
 
             // Apply enum → underlying integer conversion so the produced value matches the
             // column's logical system type.
+            // TODO we may want to revisit this later
             access = ApplyEnumConversion(access);
             var body = Expression.Convert(access, typeof(object));
             var accessor = Expression.Lambda<Func<object, object?>>(body, param).Compile();
@@ -324,7 +325,6 @@ namespace Bonsai.Parquet
                 _ => throw new NotSupportedException($"Type '{type.FullName}' is not a supported array/list type.")
             };
 
-            // Map element type to its array equivalent for the Column descriptor
             return elementType switch
             {
                 Type t when t == typeof(bool) => new Column<bool[]>(name),

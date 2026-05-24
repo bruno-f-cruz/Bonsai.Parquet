@@ -100,7 +100,6 @@ namespace Bonsai.Parquet
                         for (int i = 0; i < schema.NumColumns; i++)
                             fileColumnMap[schema.ColumnRoot(i).Name] = i;
 
-                        // Resolve column indices and validate binding types.
                         var columnIndices = new int[bindings.Count];
                         var buffers = new Array[bindings.Count];
 
