@@ -65,7 +65,7 @@ namespace Bonsai.Parquet.Tests
             var path = TempFile();
             Write(path, new[] { new[] { 1, 2, 3 }, new[] { 4, 5 } });
             var actual = ReadColumn<int[]?>(path);
-            Assert.AreEqual(2, actual.Length);
+            Assert.HasCount(2, actual);
             CollectionAssert.AreEqual(new[] { 1, 2, 3 }, actual[0]);
             CollectionAssert.AreEqual(new[] { 4, 5 }, actual[1]);
         }
@@ -195,7 +195,7 @@ namespace Bonsai.Parquet.Tests
 
             var dir = Path.GetDirectoryName(basePath)!;
             var files = Directory.GetFiles(dir, baseName + "*.parquet");
-            Assert.AreEqual(1, files.Length);
+            Assert.HasCount(1, files);
             Assert.AreNotEqual(basePath, files[0], "Timestamped file should differ from base path.");
             File.Delete(files[0]);
         }

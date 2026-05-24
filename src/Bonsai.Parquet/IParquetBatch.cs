@@ -1,4 +1,4 @@
-namespace Bonsai.Parquet
+﻿namespace Bonsai.Parquet
 {
     /// <summary>
     /// Provides typed access to a decoded batch of rows from a parquet file.

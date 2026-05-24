@@ -121,7 +121,7 @@ namespace Bonsai.Parquet.Tests
             var path = TempFile();
             Write(path, new[] { new[] { 1, 2, 3 }, new[] { 4, 5 } });
             var result = new IntArrayReader { FileName = path }.Generate().ToArray().Wait();
-            Assert.AreEqual(2, result.Length);
+            Assert.HasCount(2, result);
             CollectionAssert.AreEqual(new[] { 1, 2, 3 }, result[0]);
             CollectionAssert.AreEqual(new[] { 4, 5 }, result[1]);
         }
@@ -137,7 +137,7 @@ namespace Bonsai.Parquet.Tests
             writer.Process(rows).Wait();
 
             var result = new TupleReader { FileName = path }.Generate().ToArray().Wait();
-            Assert.AreEqual(4, result.Length);
+            Assert.HasCount(4, result);
             for (int i = 0; i < 4; i++)
             {
                 Assert.AreEqual(i, result[i].Item1);
@@ -212,7 +212,7 @@ namespace Bonsai.Parquet.Tests
             Write(path, Enumerable.Empty<int>());
 
             var result = new IntReader { FileName = path }.Generate().ToArray().Wait();
-            Assert.AreEqual(0, result.Length);
+            Assert.IsEmpty(result);
         }
 
         // ─── extra columns in file are ignored ───────────────────────────────────
@@ -233,7 +233,7 @@ namespace Bonsai.Parquet.Tests
 
         // ─── subscription disposal mid-read ─────────────────────────────────────
 
-        [TestMethod, Timeout(5000)]
+        [TestMethod, Timeout(5000, CooperativeCancellation = true)]
         public void Disposal_MidRead_StopsCleanly()
         {
             var path = TempFile();
@@ -256,8 +256,8 @@ namespace Bonsai.Parquet.Tests
 
             CollectionAssert.AreEqual(new List<Exception>(), exceptions,
                 "No exceptions should be thrown during mid-read disposal.");
-            Assert.IsTrue(count < 200,
-                $"Expected cancellation to stop emitting after ~5 items, but received {count}.");
+            Assert.IsLessThan(200,
+count, $"Expected cancellation to stop emitting after ~5 items, but received {count}.");
         }
 
         // ─── validation reader helpers ────────────────────────────────────────────

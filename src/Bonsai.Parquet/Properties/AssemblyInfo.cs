@@ -1,4 +1,4 @@
-using Bonsai;
+﻿using Bonsai;
 using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("Bonsai.Parquet.Tests")]
