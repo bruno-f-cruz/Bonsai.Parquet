@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -419,6 +419,111 @@ namespace Bonsai.Parquet.Tests
             Assert.Throws<NotSupportedException>(() =>
                 writer.Process(rows.ToObservable()).Wait());
         }
+
+        // ─── Selector tests ─────────────────────────────────────────────────────
+
+        [TestMethod]
+        public void Selector_PicksSubsetOfTopLevelMembers()
+        {
+            var path = TempFile();
+            var writer = new ParquetWriter
+            {
+                FileName = path,
+                Overwrite = true,
+                Selector = "X,Z",
+            };
+            var rows = new[]
+            {
+                new Point3D { X = 1.0, Y = 2.0, Z = 3.0 },
+                new Point3D { X = 4.0, Y = 5.0, Z = 6.0 },
+            };
+            writer.Process(rows.ToObservable()).Wait();
+
+            using var reader = new ParquetFileReader(path);
+            var schema = reader.FileMetaData.Schema;
+            Assert.AreEqual(2, schema.NumColumns);
+            Assert.AreEqual("X", schema.ColumnRoot(0).Name);
+            Assert.AreEqual("Z", schema.ColumnRoot(1).Name);
+
+            CollectionAssert.AreEqual(new[] { 1.0, 4.0 }, ReadColumn<double>(path, 0));
+            CollectionAssert.AreEqual(new[] { 3.0, 6.0 }, ReadColumn<double>(path, 1));
+        }
+
+        [TestMethod]
+        public void Selector_NestedPath_UsesDottedColumnName()
+        {
+            var path = TempFile();
+            var writer = new ParquetWriter
+            {
+                FileName = path,
+                Overwrite = true,
+                Selector = "Inner.Value",
+            };
+            var rows = new[]
+            {
+                new NestedRow { Inner = new InnerObject { Value = 10 } },
+                new NestedRow { Inner = new InnerObject { Value = 20 } },
+            };
+            writer.Process(rows.ToObservable()).Wait();
+
+            using var reader = new ParquetFileReader(path);
+            var schema = reader.FileMetaData.Schema;
+            Assert.AreEqual(1, schema.NumColumns);
+            Assert.AreEqual("Inner.Value", schema.ColumnRoot(0).Name);
+            CollectionAssert.AreEqual(new[] { 10, 20 }, ReadColumn<int>(path));
+        }
+
+        [TestMethod]
+        public void Selector_EnumMember_StoredAsUnderlyingInt()
+        {
+            var path = TempFile();
+            var writer = new ParquetWriter
+            {
+                FileName = path,
+                Overwrite = true,
+                Selector = "Kind",
+            };
+            var rows = new[]
+            {
+                new EnumRow { Kind = TestEnum.A, Other = 1 },
+                new EnumRow { Kind = TestEnum.C, Other = 2 },
+            };
+            writer.Process(rows.ToObservable()).Wait();
+
+            CollectionAssert.AreEqual(new[] { 0, 2 }, ReadColumn<int>(path));
+        }
+
+        [TestMethod]
+        public void Selector_Empty_FallsBackToDefaultLayout()
+        {
+            var path = TempFile();
+            var writer = new ParquetWriter
+            {
+                FileName = path,
+                Overwrite = true,
+                Selector = "",
+            };
+            var rows = new[] { new Point3D { X = 1, Y = 2, Z = 3 } };
+            writer.Process(rows.ToObservable()).Wait();
+
+            using var reader = new ParquetFileReader(path);
+            Assert.AreEqual(3, reader.FileMetaData.Schema.NumColumns);
+        }
+
+        [TestMethod]
+        public void Selector_InvalidPath_ThrowsAtSubscribeTime()
+        {
+            var path = TempFile();
+            var writer = new ParquetWriter
+            {
+                FileName = path,
+                Overwrite = true,
+                Selector = "NotAMember",
+            };
+            var rows = new[] { new Point3D() };
+            Assert.ThrowsExactly<InvalidOperationException>(() =>
+                writer.Process(rows.ToObservable()).Wait());
+        }
     }
 
     // ─── test helpers and types ───────────────────────────────────────────────
@@ -440,6 +545,19 @@ namespace Bonsai.Parquet.Tests
         public int Value { get; set; }
     }
 
+    public sealed class Point3D
+    {
+        public double X { get; set; }
+        public double Y { get; set; }
+        public double Z { get; set; }
+    }
+
+    public sealed class EnumRow
+    {
+        public TestEnum Kind { get; set; }
+        public int Other { get; set; }
+    }
+
     /// <summary>
     /// Exposes <see cref="ParquetSink{T}"/> internals for lifecycle testing.
     /// </summary>
@@ -449,7 +567,8 @@ namespace Bonsai.Parquet.Tests
 
         public ParquetSinkTestHarness(string path)
         {
-            Sink = new ParquetSink<T>(path, ParquetSharp.Compression.Snappy, 1000);
+            var plan = SchemaInference.BuildPlan(typeof(T), selector: null);
+            Sink = new ParquetSink<T>(path, plan, ParquetSharp.Compression.Snappy, 1000);
         }
 
         public void Dispose() => Sink.Dispose();

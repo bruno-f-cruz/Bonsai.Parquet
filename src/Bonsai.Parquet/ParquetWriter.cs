@@ -41,6 +41,7 @@ namespace Bonsai.Parquet
         /// Gets or sets the inner properties that will be selected when writing each element of the sequence.
         /// </summary>
         [Description("The inner properties that will be selected when writing each element of the sequence.")]
+        [Editor("Bonsai.IO.Design.DataMemberSelectorEditor, Bonsai.System.Design", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         public string? Selector { get; set; }
 
         /// <summary>
@@ -80,12 +81,10 @@ namespace Bonsai.Parquet
                     throw new IOException($"The file '{fileName}' already exists.");
                 }
 
-                var rowType = typeof(TSource);
-                // Validate schema at subscribe time so unsupported types fail early.
-                var columns = SchemaInference.InferColumns(rowType);
-                _ = columns; // validation only; ParquetSink rebuilds internally
-
-                var sink = new ParquetSink<TSource>(fileName, CompressionMethod, RowGroupSize);
+                // Build the full column plan (name + parquet column + value accessor) at
+                // subscribe time so unsupported types or bad selector paths fail early.
+                var plan = SchemaInference.BuildPlan(typeof(TSource), Selector);
+                var sink = new ParquetSink<TSource>(fileName, plan, CompressionMethod, RowGroupSize);
 
                 var subscription = source.Do(item =>
                 {

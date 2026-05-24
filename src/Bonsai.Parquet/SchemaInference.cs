@@ -1,12 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 using System.Reflection;
+using Bonsai;
 using ParquetSharp;
 
 namespace Bonsai.Parquet
 {
     /// <summary>
-    /// Infers a ParquetSharp column array from a C# row type.
+    /// Infers parquet column descriptors and value accessors from a C# row type and
+    /// an optional CsvWriter-style member <c>Selector</c> expression.
     /// </summary>
     internal static class SchemaInference
     {
@@ -54,6 +57,184 @@ namespace Bonsai.Parquet
                 }
             }
             return columns;
+        }
+
+        /// <summary>
+        /// Builds the full set of column plans (name + parquet column + value accessor) for
+        /// the given row type, honouring an optional CsvWriter-style <paramref name="selector"/>
+        /// (e.g. <c>"X,Y,Position.X"</c>).
+        /// </summary>
+        /// <remarks>
+        /// When <paramref name="selector"/> is null or whitespace, the inferred layout matches
+        /// <see cref="InferColumns(Type)"/>: a single "Value" column for scalar row types, or one
+        /// column per public property (named after the property) for compound rows.
+        ///
+        /// When a selector is provided, each comma-separated member path becomes one column.
+        /// The column name is the dotted path itself (e.g. <c>"Position.X"</c>) — this differs
+        /// from <c>CsvWriter</c>'s header logic, which strips both the parameter prefix and the
+        /// leaf member: parquet column names must be unique within a file, so keeping the full
+        /// path is the only sane mapping.
+        /// </remarks>
+        internal static ColumnPlan[] BuildPlan(Type rowType, string? selector)
+        {
+            if (string.IsNullOrWhiteSpace(selector))
+            {
+                return BuildDefaultPlan(rowType);
+            }
+
+            var paths = new List<string>(ExpressionHelper.SelectMemberNames(selector));
+            if (paths.Count == 0) return BuildDefaultPlan(rowType);
+
+            var plans = new ColumnPlan[paths.Count];
+            for (int i = 0; i < paths.Count; i++)
+            {
+                var path = paths[i];
+                plans[i] = BuildPlanForPath(rowType, path);
+            }
+            return plans;
+        }
+
+        static ColumnPlan[] BuildDefaultPlan(Type rowType)
+        {
+            if (IsTier1(rowType) || IsNullable(rowType) || IsArray(rowType) || IsEnum(rowType))
+            {
+                var col = MakeColumn("Value", rowType);
+                return new[] { new ColumnPlan("Value", col, BuildScalarAccessor(rowType)) };
+            }
+
+            var properties = rowType.GetProperties(BindingFlags.Instance | BindingFlags.Public);
+            if (properties.Length == 0)
+            {
+                throw new NotSupportedException(
+                    $"Type '{rowType.FullName}' has no public instance properties and is not a supported scalar type. " +
+                    "Flatten nested objects via the Selector expression before writing.");
+            }
+
+            var plans = new ColumnPlan[properties.Length];
+            for (int i = 0; i < properties.Length; i++)
+            {
+                var prop = properties[i];
+                try
+                {
+                    var col = MakeColumn(prop.Name, prop.PropertyType);
+                    plans[i] = new ColumnPlan(prop.Name, col, BuildPropertyAccessor(prop));
+                }
+                catch (NotSupportedException ex)
+                {
+                    throw new NotSupportedException(
+                        $"Property '{prop.Name}' on type '{rowType.FullName}' has unsupported type '{prop.PropertyType.FullName}'. " +
+                        ex.Message, ex);
+                }
+            }
+            return plans;
+        }
+
+        static ColumnPlan BuildPlanForPath(Type rowType, string path)
+        {
+            // Compile the member access lambda using Bonsai's expression helper so the selector
+            // syntax (e.g. "Foo.Bar", "Items[0].Value") matches CsvWriter exactly.
+            var param = Expression.Parameter(typeof(object), "row");
+            var typedParam = Expression.Convert(param, rowType);
+            Expression access;
+            try
+            {
+                access = ExpressionHelper.MemberAccess(typedParam, path);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException(
+                    $"Selector path '{path}' could not be resolved on type '{rowType.FullName}': {ex.Message}", ex);
+            }
+
+            var leafType = access.Type;
+            Column column;
+            try
+            {
+                column = MakeColumn(path, leafType);
+            }
+            catch (NotSupportedException ex)
+            {
+                throw new NotSupportedException(
+                    $"Selector path '{path}' on type '{rowType.FullName}' has unsupported type '{leafType.FullName}'. " +
+                    ex.Message, ex);
+            }
+
+            // Apply enum → underlying integer conversion so the produced value matches the
+            // column's logical system type.
+            access = ApplyEnumConversion(access);
+            var body = Expression.Convert(access, typeof(object));
+            var accessor = Expression.Lambda<Func<object, object?>>(body, param).Compile();
+
+            return new ColumnPlan(path, column, accessor);
+        }
+
+        static Func<object, object?> BuildScalarAccessor(Type rowType)
+        {
+            if (rowType.IsEnum)
+            {
+                var underlying = Enum.GetUnderlyingType(rowType);
+                return row => Convert.ChangeType(row, underlying);
+            }
+            return row => row;
+        }
+
+        static Func<object, object?> BuildPropertyAccessor(PropertyInfo property)
+        {
+            var propType = property.PropertyType;
+
+            if (propType.IsEnum)
+            {
+                var underlying = Enum.GetUnderlyingType(propType);
+                return row =>
+                {
+                    var val = property.GetValue(row);
+                    return val == null ? null : Convert.ChangeType(val, underlying);
+                };
+            }
+
+            if (IsNullable(propType))
+            {
+                var inner = Nullable.GetUnderlyingType(propType)!;
+                if (inner.IsEnum)
+                {
+                    var underlying = Enum.GetUnderlyingType(inner);
+                    return row =>
+                    {
+                        var val = property.GetValue(row);
+                        if (val == null) return null;
+                        return Convert.ChangeType(val, underlying);
+                    };
+                }
+            }
+
+            return row => property.GetValue(row);
+        }
+
+        static Expression ApplyEnumConversion(Expression expr)
+        {
+            var type = expr.Type;
+            if (type.IsEnum)
+            {
+                return Expression.Convert(expr, Enum.GetUnderlyingType(type));
+            }
+
+            if (IsNullable(type))
+            {
+                var inner = Nullable.GetUnderlyingType(type)!;
+                if (inner.IsEnum)
+                {
+                    var underlying = Enum.GetUnderlyingType(inner);
+                    var nullableUnderlying = typeof(Nullable<>).MakeGenericType(underlying);
+                    var hasValue = Expression.Property(expr, nameof(Nullable<int>.HasValue));
+                    var value = Expression.Property(expr, nameof(Nullable<int>.Value));
+                    var convertedValue = Expression.Convert(value, underlying);
+                    var convertedNullable = Expression.Convert(convertedValue, nullableUnderlying);
+                    var nullConstant = Expression.Constant(null, nullableUnderlying);
+                    return Expression.Condition(hasValue, convertedNullable, nullConstant);
+                }
+            }
+
+            return expr;
         }
 
         static Column MakeColumn(string name, Type type)
