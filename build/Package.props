@@ -1,10 +1,10 @@
 <Project>
   <PropertyGroup>
     <PackageTags>Bonsai Rx Parquet Apache Columnar</PackageTags>
-    <PackageProjectUrl>https://github.com/bruno-f-cruz/Bonsai.Parquet</PackageProjectUrl>
+    <PackageProjectUrl>https://bonsai-rx.org/Bonsai.Parquet</PackageProjectUrl>
     <RepositoryUrl>https://github.com/bruno-f-cruz/Bonsai.Parquet</RepositoryUrl>
 
     <Authors>Bonsai.Parquet Authors</Authors>
-    <Copyright>Copyright © Bonsai.Parquet Authors</Copyright>
+    <Copyright>Copyright © Bonsai Foundation CIC and Contributors</Copyright>
   </PropertyGroup>
 </Project>
