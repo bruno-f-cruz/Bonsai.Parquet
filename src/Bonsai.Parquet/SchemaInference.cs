@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
 using ParquetSharp;
@@ -80,113 +80,110 @@ namespace Bonsai.Parquet
 
         static Column MakeScalarColumn(string name, Type type)
         {
-            if (type == typeof(bool)) return new Column<bool>(name);
-            if (type == typeof(sbyte)) return new Column(typeof(sbyte), name, LogicalType.Int(8, true));
-            if (type == typeof(byte)) return new Column(typeof(byte), name, LogicalType.Int(8, false));
-            if (type == typeof(short)) return new Column(typeof(short), name, LogicalType.Int(16, true));
-            if (type == typeof(ushort)) return new Column(typeof(ushort), name, LogicalType.Int(16, false));
-            if (type == typeof(int)) return new Column<int>(name);
-            if (type == typeof(uint)) return new Column(typeof(uint), name, LogicalType.Int(32, false));
-            if (type == typeof(long)) return new Column<long>(name);
-            if (type == typeof(ulong)) return new Column(typeof(ulong), name, LogicalType.Int(64, false));
-            if (type == typeof(float)) return new Column<float>(name);
-            if (type == typeof(double)) return new Column<double>(name);
-            // Decimal: defaults to precision 28, scale 12. DateTime semantics: local-time (isAdjustedToUTC=false).
-            if (type == typeof(decimal)) return new Column(typeof(decimal), name, LogicalType.Decimal(DecimalPrecision, DecimalScale));
-            if (type == typeof(string)) return new Column<string>(name);
-            if (type == typeof(byte[])) return new Column<byte[]>(name);
-            // DateTime: stored as TIMESTAMP(MICROS, isAdjustedToUTC=false); local-time semantics.
-            if (type == typeof(DateTime)) return new Column(typeof(DateTime), name, LogicalType.Timestamp(false, TimeUnit.Micros));
-            if (type == typeof(TimeSpan)) return new Column(typeof(TimeSpan), name, LogicalType.Time(false, TimeUnit.Micros));
-            if (type == typeof(Guid)) return new Column<Guid>(name);
-
-            throw new NotSupportedException(
-                $"Type '{type.FullName}' is not a supported Tier-1 parquet type. " +
-                "Supported types: bool, sbyte, byte, short, ushort, int, uint, long, ulong, float, double, decimal, string, byte[], DateTime, TimeSpan, Guid.");
+            return type switch
+            {
+                Type t when t == typeof(bool) => new Column<bool>(name),
+                Type t when t == typeof(sbyte) => new Column(typeof(sbyte), name, LogicalType.Int(8, true)),
+                Type t when t == typeof(byte) => new Column(typeof(byte), name, LogicalType.Int(8, false)),
+                Type t when t == typeof(short) => new Column(typeof(short), name, LogicalType.Int(16, true)),
+                Type t when t == typeof(ushort) => new Column(typeof(ushort), name, LogicalType.Int(16, false)),
+                Type t when t == typeof(int) => new Column<int>(name),
+                Type t when t == typeof(uint) => new Column(typeof(uint), name, LogicalType.Int(32, false)),
+                Type t when t == typeof(long) => new Column<long>(name),
+                Type t when t == typeof(ulong) => new Column(typeof(ulong), name, LogicalType.Int(64, false)),
+                Type t when t == typeof(float) => new Column<float>(name),
+                Type t when t == typeof(double) => new Column<double>(name),
+                // Decimal: defaults to precision 28, scale 12.
+                Type t when t == typeof(decimal) => new Column(typeof(decimal), name, LogicalType.Decimal(DecimalPrecision, DecimalScale)),
+                Type t when t == typeof(string) => new Column<string>(name),
+                Type t when t == typeof(byte[]) => new Column<byte[]>(name),
+                // DateTime: stored as TIMESTAMP(MICROS, isAdjustedToUTC=false); local-time semantics.
+                Type t when t == typeof(DateTime) => new Column(typeof(DateTime), name, LogicalType.Timestamp(false, TimeUnit.Micros)),
+                Type t when t == typeof(TimeSpan) => new Column(typeof(TimeSpan), name, LogicalType.Time(false, TimeUnit.Micros)),
+                Type t when t == typeof(Guid) => new Column<Guid>(name),
+                _ => throw new NotSupportedException(
+                    $"Type '{type.FullName}' is not a supported Tier-1 parquet type. " +
+                    "Supported types: bool, sbyte, byte, short, ushort, int, uint, long, ulong, float, double, decimal, string, byte[], DateTime, TimeSpan, Guid.")
+            };
         }
 
         static Column MakeNullableColumn(string name, Type inner)
         {
             var nullableType = typeof(Nullable<>).MakeGenericType(inner);
 
-            if (inner == typeof(bool)) return new Column<bool?>(name);
-            if (inner == typeof(sbyte)) return new Column(nullableType, name, LogicalType.Int(8, true));
-            if (inner == typeof(byte)) return new Column(nullableType, name, LogicalType.Int(8, false));
-            if (inner == typeof(short)) return new Column(nullableType, name, LogicalType.Int(16, true));
-            if (inner == typeof(ushort)) return new Column(nullableType, name, LogicalType.Int(16, false));
-            if (inner == typeof(int)) return new Column<int?>(name);
-            if (inner == typeof(uint)) return new Column(nullableType, name, LogicalType.Int(32, false));
-            if (inner == typeof(long)) return new Column<long?>(name);
-            if (inner == typeof(ulong)) return new Column(nullableType, name, LogicalType.Int(64, false));
-            if (inner == typeof(float)) return new Column<float?>(name);
-            if (inner == typeof(double)) return new Column<double?>(name);
-            if (inner == typeof(decimal)) return new Column(nullableType, name, LogicalType.Decimal(DecimalPrecision, DecimalScale));
-            if (inner == typeof(DateTime)) return new Column(nullableType, name, LogicalType.Timestamp(false, TimeUnit.Micros));
-            if (inner == typeof(TimeSpan)) return new Column(nullableType, name, LogicalType.Time(false, TimeUnit.Micros));
-            if (inner == typeof(Guid)) return new Column<Guid?>(name);
-
-            if (inner.IsEnum)
+            return inner switch
             {
-                var underlying = Enum.GetUnderlyingType(inner);
-                var nullableUnderlying = typeof(Nullable<>).MakeGenericType(underlying);
-                return MakeNullableColumn(name, underlying);
-            }
-
-            throw new NotSupportedException(
-                $"Nullable<{inner.FullName}> is not supported. Only Nullable<T> of Tier-1 value types is supported.");
+                Type t when t == typeof(bool) => new Column<bool?>(name),
+                Type t when t == typeof(sbyte) => new Column(nullableType, name, LogicalType.Int(8, true)),
+                Type t when t == typeof(byte) => new Column(nullableType, name, LogicalType.Int(8, false)),
+                Type t when t == typeof(short) => new Column(nullableType, name, LogicalType.Int(16, true)),
+                Type t when t == typeof(ushort) => new Column(nullableType, name, LogicalType.Int(16, false)),
+                Type t when t == typeof(int) => new Column<int?>(name),
+                Type t when t == typeof(uint) => new Column(nullableType, name, LogicalType.Int(32, false)),
+                Type t when t == typeof(long) => new Column<long?>(name),
+                Type t when t == typeof(ulong) => new Column(nullableType, name, LogicalType.Int(64, false)),
+                Type t when t == typeof(float) => new Column<float?>(name),
+                Type t when t == typeof(double) => new Column<double?>(name),
+                Type t when t == typeof(decimal) => new Column(nullableType, name, LogicalType.Decimal(DecimalPrecision, DecimalScale)),
+                Type t when t == typeof(DateTime) => new Column(nullableType, name, LogicalType.Timestamp(false, TimeUnit.Micros)),
+                Type t when t == typeof(TimeSpan) => new Column(nullableType, name, LogicalType.Time(false, TimeUnit.Micros)),
+                Type t when t == typeof(Guid) => new Column<Guid?>(name),
+                Type t when t.IsEnum => MakeNullableColumn(name, Enum.GetUnderlyingType(t)),
+                _ => throw new NotSupportedException(
+                    $"Nullable<{inner.FullName}> is not supported. Only Nullable<T> of Tier-1 value types is supported.")
+            };
         }
 
         static Column MakeArrayColumn(string name, Type type)
         {
-            Type elementType;
-            if (type.IsArray)
+            Type elementType = type switch
             {
-                elementType = type.GetElementType()!;
-            }
-            else if (IsGenericList(type, out var listElement))
-            {
-                elementType = listElement!;
-            }
-            else
-            {
-                throw new NotSupportedException($"Type '{type.FullName}' is not a supported array/list type.");
-            }
+                Type t when t.IsArray => t.GetElementType()!,
+                Type t when IsGenericList(t, out var listElement) => listElement!,
+                _ => throw new NotSupportedException($"Type '{type.FullName}' is not a supported array/list type.")
+            };
 
             // Map element type to its array equivalent for the Column descriptor
-            if (elementType == typeof(bool)) return new Column<bool[]>(name);
-            if (elementType == typeof(sbyte)) return new Column(typeof(sbyte[]), name, LogicalType.Int(8, true));
-            if (elementType == typeof(byte)) return new Column<byte[]>(name); // byte[] is BYTE_ARRAY, not LIST
-            if (elementType == typeof(short)) return new Column(typeof(short[]), name, LogicalType.Int(16, true));
-            if (elementType == typeof(ushort)) return new Column(typeof(ushort[]), name, LogicalType.Int(16, false));
-            if (elementType == typeof(int)) return new Column<int[]>(name);
-            if (elementType == typeof(uint)) return new Column(typeof(uint[]), name, LogicalType.Int(32, false));
-            if (elementType == typeof(long)) return new Column<long[]>(name);
-            if (elementType == typeof(ulong)) return new Column(typeof(ulong[]), name, LogicalType.Int(64, false));
-            if (elementType == typeof(float)) return new Column<float[]>(name);
-            if (elementType == typeof(double)) return new Column<double[]>(name);
-            if (elementType == typeof(string)) return new Column<string[]>(name);
-            if (elementType == typeof(DateTime)) return new Column(typeof(DateTime[]), name, LogicalType.Timestamp(false, TimeUnit.Micros));
-            if (elementType == typeof(TimeSpan)) return new Column(typeof(TimeSpan[]), name, LogicalType.Time(false, TimeUnit.Micros));
-            if (elementType == typeof(Guid)) return new Column<Guid[]>(name);
-
-            throw new NotSupportedException(
-                $"Array element type '{elementType.FullName}' is not supported. Only Tier-1 element types are supported in arrays.");
+            return elementType switch
+            {
+                Type t when t == typeof(bool) => new Column<bool[]>(name),
+                Type t when t == typeof(sbyte) => new Column(typeof(sbyte[]), name, LogicalType.Int(8, true)),
+                Type t when t == typeof(byte) => new Column<byte[]>(name), // byte[] is BYTE_ARRAY, not LIST
+                Type t when t == typeof(short) => new Column(typeof(short[]), name, LogicalType.Int(16, true)),
+                Type t when t == typeof(ushort) => new Column(typeof(ushort[]), name, LogicalType.Int(16, false)),
+                Type t when t == typeof(int) => new Column<int[]>(name),
+                Type t when t == typeof(uint) => new Column(typeof(uint[]), name, LogicalType.Int(32, false)),
+                Type t when t == typeof(long) => new Column<long[]>(name),
+                Type t when t == typeof(ulong) => new Column(typeof(ulong[]), name, LogicalType.Int(64, false)),
+                Type t when t == typeof(float) => new Column<float[]>(name),
+                Type t when t == typeof(double) => new Column<double[]>(name),
+                Type t when t == typeof(string) => new Column<string[]>(name),
+                Type t when t == typeof(DateTime) => new Column(typeof(DateTime[]), name, LogicalType.Timestamp(false, TimeUnit.Micros)),
+                Type t when t == typeof(TimeSpan) => new Column(typeof(TimeSpan[]), name, LogicalType.Time(false, TimeUnit.Micros)),
+                Type t when t == typeof(Guid) => new Column<Guid[]>(name),
+                _ => throw new NotSupportedException(
+                    $"Array element type '{elementType.FullName}' is not supported. Only Tier-1 element types are supported in arrays.")
+            };
         }
 
         static bool IsTier1(Type type)
         {
-            return type == typeof(bool)
-                || type == typeof(sbyte) || type == typeof(byte)
-                || type == typeof(short) || type == typeof(ushort)
-                || type == typeof(int) || type == typeof(uint)
-                || type == typeof(long) || type == typeof(ulong)
-                || type == typeof(float) || type == typeof(double)
-                || type == typeof(decimal)
-                || type == typeof(string)
-                || type == typeof(byte[])
-                || type == typeof(DateTime)
-                || type == typeof(TimeSpan)
-                || type == typeof(Guid);
+            return type switch
+            {
+                Type t when t == typeof(bool) => true,
+                Type t when t == typeof(sbyte) || t == typeof(byte) => true,
+                Type t when t == typeof(short) || t == typeof(ushort) => true,
+                Type t when t == typeof(int) || t == typeof(uint) => true,
+                Type t when t == typeof(long) || t == typeof(ulong) => true,
+                Type t when t == typeof(float) || t == typeof(double) => true,
+                Type t when t == typeof(decimal) => true,
+                Type t when t == typeof(string) => true,
+                Type t when t == typeof(byte[]) => true,
+                Type t when t == typeof(DateTime) => true,
+                Type t when t == typeof(TimeSpan) => true,
+                Type t when t == typeof(Guid) => true,
+                _ => false
+            };
         }
 
         static bool IsNullable(Type type)
