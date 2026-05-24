@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<WorkflowBuilder Version="2.9.0"
+                 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                 xmlns:rx="clr-namespace:Bonsai.Reactive;assembly=Bonsai.Core"
+                 xmlns:pq="clr-namespace:Bonsai.Parquet;assembly=Bonsai.Parquet"
+                 xmlns="https://bonsai-rx.org/2018/workflow">
+  <Workflow>
+    <Nodes>
+      <Expression xsi:type="rx:Timer">
+        <rx:DueTime>PT0S</rx:DueTime>
+        <rx:Period>PT0.1S</rx:Period>
+      </Expression>
+      <Expression xsi:type="pq:ParquetWriter">
+        <pq:FileName>samples.parquet</pq:FileName>
+        <pq:Suffix>None</pq:Suffix>
+        <pq:Overwrite>true</pq:Overwrite>
+        <pq:CompressionMethod>Snappy</pq:CompressionMethod>
+        <pq:RowGroupSize>100000</pq:RowGroupSize>
+      </Expression>
+    </Nodes>
+    <Edges>
+      <Edge From="0" To="1" Label="Source1" />
+    </Edges>
+  </Workflow>
+</WorkflowBuilder>

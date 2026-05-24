@@ -1,2 +1,5 @@
 - name: Introduction
   href: ../index.md
+- name: Workflow guide
+- href: writing-parquet.md
+- href: reading-parquet.md
