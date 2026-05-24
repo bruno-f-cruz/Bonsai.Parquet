@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
@@ -43,14 +43,18 @@ namespace Bonsai.Parquet
         protected abstract IReadOnlyList<ColumnBinding> Columns { get; }
 
         /// <summary>
-        /// Called once per decoded batch. Pull typed column arrays from <paramref name="batch"/>
-        /// and push each row via <paramref name="emit"/>.
+        /// Called once per decoded batch. Pull the typed column arrays you need from
+        /// <paramref name="batch"/> into local variables, then return a closure that
+        /// constructs one <typeparamref name="TRow"/> from the row index. The base class
+        /// owns the per-row loop and emission.
         /// </summary>
         /// <param name="batch">
-        /// The decoded batch. Buffers are framework-owned and reused; do not retain references.
+        /// The decoded batch. Buffers are framework-owned and reused; the returned factory
+        /// is only invoked before the next call to <see cref="CreateRowFactory"/>, so it is
+        /// safe to close over the column arrays.
         /// </param>
-        /// <param name="emit">Callback to push a constructed row downstream.</param>
-        protected abstract void ReadBatch(IParquetBatch batch, Action<TRow> emit);
+        /// <returns>A factory mapping row index → constructed row.</returns>
+        protected abstract Func<int, TRow> CreateRowFactory(IParquetBatch batch);
 
         /// <summary>
         /// Opens the Parquet file and emits one <typeparamref name="TRow"/> per row.
@@ -159,13 +163,6 @@ namespace Bonsai.Parquet
                             bindings.Select(b => b.Name).ToArray(),
                             buffers);
 
-                        // Wrap emit to honour cancellation between individual row callbacks.
-                        var emit = new Action<TRow>(row =>
-                        {
-                            if (!cts.IsCancellationRequested)
-                                observer.OnNext(row);
-                        });
-
                         int numRowGroups = fileReader.FileMetaData.NumRowGroups;
 
                         for (int rg = 0; rg < numRowGroups; rg++)
@@ -194,7 +191,12 @@ namespace Bonsai.Parquet
                                         decoders[c].Read(count);
 
                                     batch.SetRowCount(count);
-                                    ReadBatch(batch, emit);
+                                    var factory = CreateRowFactory(batch);
+                                    for (int r = 0; r < count; r++)
+                                    {
+                                        if (cts.IsCancellationRequested) return;
+                                        observer.OnNext(factory(r));
+                                    }
 
                                     rowsRead += count;
                                 }

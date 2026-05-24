@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -29,10 +29,10 @@ namespace Bonsai.Parquet.Tests
             protected override IReadOnlyList<ColumnBinding> Columns =>
                 new[] { new ColumnBinding("Value", typeof(bool)) };
 
-            protected override void ReadBatch(IParquetBatch batch, Action<bool> emit)
+            protected override Func<int, bool> CreateRowFactory(IParquetBatch batch)
             {
                 var v = batch.Column<bool>("Value");
-                for (int i = 0; i < batch.RowCount; i++) emit(v[i]);
+                return i => v[i];
             }
         }
 
@@ -41,10 +41,10 @@ namespace Bonsai.Parquet.Tests
             protected override IReadOnlyList<ColumnBinding> Columns =>
                 new[] { new ColumnBinding("Value", typeof(int)) };
 
-            protected override void ReadBatch(IParquetBatch batch, Action<int> emit)
+            protected override Func<int, int> CreateRowFactory(IParquetBatch batch)
             {
                 var v = batch.Column<int>("Value");
-                for (int i = 0; i < batch.RowCount; i++) emit(v[i]);
+                return i => v[i];
             }
         }
 
@@ -53,10 +53,10 @@ namespace Bonsai.Parquet.Tests
             protected override IReadOnlyList<ColumnBinding> Columns =>
                 new[] { new ColumnBinding("Value", typeof(long)) };
 
-            protected override void ReadBatch(IParquetBatch batch, Action<long> emit)
+            protected override Func<int, long> CreateRowFactory(IParquetBatch batch)
             {
                 var v = batch.Column<long>("Value");
-                for (int i = 0; i < batch.RowCount; i++) emit(v[i]);
+                return i => v[i];
             }
         }
 
@@ -65,10 +65,10 @@ namespace Bonsai.Parquet.Tests
             protected override IReadOnlyList<ColumnBinding> Columns =>
                 new[] { new ColumnBinding("Value", typeof(double)) };
 
-            protected override void ReadBatch(IParquetBatch batch, Action<double> emit)
+            protected override Func<int, double> CreateRowFactory(IParquetBatch batch)
             {
                 var v = batch.Column<double>("Value");
-                for (int i = 0; i < batch.RowCount; i++) emit(v[i]);
+                return i => v[i];
             }
         }
 
@@ -77,10 +77,10 @@ namespace Bonsai.Parquet.Tests
             protected override IReadOnlyList<ColumnBinding> Columns =>
                 new[] { new ColumnBinding("Value", typeof(string)) };
 
-            protected override void ReadBatch(IParquetBatch batch, Action<string?> emit)
+            protected override Func<int, string?> CreateRowFactory(IParquetBatch batch)
             {
                 var v = batch.Column<string>("Value");
-                for (int i = 0; i < batch.RowCount; i++) emit(v[i]);
+                return i => v[i];
             }
         }
 
@@ -89,10 +89,10 @@ namespace Bonsai.Parquet.Tests
             protected override IReadOnlyList<ColumnBinding> Columns =>
                 new[] { new ColumnBinding("Value", typeof(DateTime)) };
 
-            protected override void ReadBatch(IParquetBatch batch, Action<DateTime> emit)
+            protected override Func<int, DateTime> CreateRowFactory(IParquetBatch batch)
             {
                 var v = batch.Column<DateTime>("Value");
-                for (int i = 0; i < batch.RowCount; i++) emit(v[i]);
+                return i => v[i];
             }
         }
 
@@ -101,10 +101,10 @@ namespace Bonsai.Parquet.Tests
             protected override IReadOnlyList<ColumnBinding> Columns =>
                 new[] { new ColumnBinding("Value", typeof(Guid)) };
 
-            protected override void ReadBatch(IParquetBatch batch, Action<Guid> emit)
+            protected override Func<int, Guid> CreateRowFactory(IParquetBatch batch)
             {
                 var v = batch.Column<Guid>("Value");
-                for (int i = 0; i < batch.RowCount; i++) emit(v[i]);
+                return i => v[i];
             }
         }
 
@@ -113,10 +113,10 @@ namespace Bonsai.Parquet.Tests
             protected override IReadOnlyList<ColumnBinding> Columns =>
                 new[] { new ColumnBinding("Value", typeof(decimal)) };
 
-            protected override void ReadBatch(IParquetBatch batch, Action<decimal> emit)
+            protected override Func<int, decimal> CreateRowFactory(IParquetBatch batch)
             {
                 var v = batch.Column<decimal>("Value");
-                for (int i = 0; i < batch.RowCount; i++) emit(v[i]);
+                return i => v[i];
             }
         }
 
@@ -125,10 +125,10 @@ namespace Bonsai.Parquet.Tests
             protected override IReadOnlyList<ColumnBinding> Columns =>
                 new[] { new ColumnBinding("Value", typeof(byte[])) };
 
-            protected override void ReadBatch(IParquetBatch batch, Action<byte[]?> emit)
+            protected override Func<int, byte[]?> CreateRowFactory(IParquetBatch batch)
             {
                 var v = batch.Column<byte[]>("Value");
-                for (int i = 0; i < batch.RowCount; i++) emit(v[i]);
+                return i => v[i];
             }
         }
 
@@ -137,10 +137,10 @@ namespace Bonsai.Parquet.Tests
             protected override IReadOnlyList<ColumnBinding> Columns =>
                 new[] { new ColumnBinding("Value", typeof(int?)) };
 
-            protected override void ReadBatch(IParquetBatch batch, Action<int?> emit)
+            protected override Func<int, int?> CreateRowFactory(IParquetBatch batch)
             {
                 var v = batch.Column<int?>("Value");
-                for (int i = 0; i < batch.RowCount; i++) emit(v[i]);
+                return i => v[i];
             }
         }
 
@@ -149,10 +149,10 @@ namespace Bonsai.Parquet.Tests
             protected override IReadOnlyList<ColumnBinding> Columns =>
                 new[] { new ColumnBinding("Value", typeof(int[])) };
 
-            protected override void ReadBatch(IParquetBatch batch, Action<int[]?> emit)
+            protected override Func<int, int[]?> CreateRowFactory(IParquetBatch batch)
             {
                 var v = batch.Column<int[]>("Value");
-                for (int i = 0; i < batch.RowCount; i++) emit(v[i]);
+                return i => v[i];
             }
         }
 
@@ -164,12 +164,11 @@ namespace Bonsai.Parquet.Tests
                 new ColumnBinding("Label", typeof(string)),
             };
 
-            protected override void ReadBatch(IParquetBatch batch, Action<Tuple<int, string?>> emit)
+            protected override Func<int, Tuple<int, string?>> CreateRowFactory(IParquetBatch batch)
             {
                 var xs = batch.Column<int>("X");
                 var labels = batch.Column<string>("Label");
-                for (int i = 0; i < batch.RowCount; i++)
-                    emit(Tuple.Create(xs[i], labels[i]));
+                return i => Tuple.Create(xs[i], labels[i]);
             }
         }
 
@@ -482,10 +481,10 @@ namespace Bonsai.Parquet.Tests
             protected override IReadOnlyList<ColumnBinding> Columns =>
                 new[] { new ColumnBinding("NonExistentColumn", typeof(int)) };
 
-            protected override void ReadBatch(IParquetBatch batch, Action<int> emit)
+            protected override Func<int, int> CreateRowFactory(IParquetBatch batch)
             {
                 var v = batch.Column<int>("NonExistentColumn");
-                for (int i = 0; i < batch.RowCount; i++) emit(v[i]);
+                return i => v[i];
             }
         }
 
@@ -495,10 +494,10 @@ namespace Bonsai.Parquet.Tests
             protected override IReadOnlyList<ColumnBinding> Columns =>
                 new[] { new ColumnBinding("Value", typeof(double)) };
 
-            protected override void ReadBatch(IParquetBatch batch, Action<double> emit)
+            protected override Func<int, double> CreateRowFactory(IParquetBatch batch)
             {
                 var v = batch.Column<double>("Value");
-                for (int i = 0; i < batch.RowCount; i++) emit(v[i]);
+                return i => v[i];
             }
         }
 
@@ -507,7 +506,7 @@ namespace Bonsai.Parquet.Tests
             protected override IReadOnlyList<ColumnBinding> Columns =>
                 Array.Empty<ColumnBinding>();
 
-            protected override void ReadBatch(IParquetBatch batch, Action<int> emit) { }
+            protected override Func<int, int> CreateRowFactory(IParquetBatch batch) => _ => 0;
         }
 
         private class XOnlyReader : ParquetReader<int>
@@ -515,10 +514,10 @@ namespace Bonsai.Parquet.Tests
             protected override IReadOnlyList<ColumnBinding> Columns =>
                 new[] { new ColumnBinding("X", typeof(int)) };
 
-            protected override void ReadBatch(IParquetBatch batch, Action<int> emit)
+            protected override Func<int, int> CreateRowFactory(IParquetBatch batch)
             {
                 var v = batch.Column<int>("X");
-                for (int i = 0; i < batch.RowCount; i++) emit(v[i]);
+                return i => v[i];
             }
         }
     }
