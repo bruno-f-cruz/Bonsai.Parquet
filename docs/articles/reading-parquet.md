@@ -52,19 +52,14 @@ guarantees those arrays remain valid until the next call to
 `CreateRowFactory`, which makes the closure-and-index pattern safe and
 allocation-free in the per-row hot path.
 
-## A minimal reader
+## Using the reader in a workflow
 
-Once the extension above is compiled, it appears in the Bonsai toolbox just
-like any built-in operator:
-
-:::workflow
-![A minimal parquet reader that replays the file written by the writer example](../workflows/reading-parquet-basic.bonsai)
-:::
-
-The pipeline is a single source operator: `LongSampleReader` reads each row
-from the configured `FileName` and emits one `long` per row, one `OnNext` at
-a time. The sequence completes when the end of the file is reached, or earlier
-if the subscription is disposed.
+Once the extension above is compiled into the workflow's `Extensions` folder,
+`LongSampleReader` appears in the Bonsai toolbox just like any built-in
+operator. Drop it onto the workflow, set its `FileName`, and it emits one
+`long` per row from the file, one `OnNext` at a time. The sequence completes
+when the end of the file is reached, or earlier if the subscription is
+disposed.
 
 ## Reading multi-column rows
 
