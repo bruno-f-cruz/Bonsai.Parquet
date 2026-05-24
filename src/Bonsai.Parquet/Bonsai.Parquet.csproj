@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Title>Bonsai - Parquet</Title>
     <Description>Bonsai Library for reading and writing Apache Parquet files using ParquetSharp.</Description>
-    <TargetFrameworks>net472;net8.0</TargetFrameworks>
+    <TargetFrameworks>net472;net8.0;net8.0-windows</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>
