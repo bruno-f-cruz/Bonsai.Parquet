@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Title>Bonsai - Parquet Design</Title>
+    <Description>Design-time editors for Bonsai.Parquet.</Description>
+    <TargetFrameworks>net472</TargetFrameworks>
+    <UseWindowsForms>true</UseWindowsForms>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Bonsai.Design" Version="2.9.0" />
+    <PackageReference Include="ParquetSharp" Version="23.0.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Bonsai.Parquet\Bonsai.Parquet.csproj" />
+  </ItemGroup>
+
+</Project>

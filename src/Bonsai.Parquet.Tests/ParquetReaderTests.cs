@@ -24,7 +24,7 @@ namespace Bonsai.Parquet.Tests
 
         // ─── concrete reader subclasses ──────────────────────────────────────────
 
-        private class IntReader : ParquetReader<int>
+        private class IntReader : AbstractParquetReader<int>
         {
             protected override IReadOnlyList<ColumnBinding> Columns =>
                 new[] { new ColumnBinding("Value", typeof(int)) };
@@ -36,7 +36,7 @@ namespace Bonsai.Parquet.Tests
             }
         }
 
-        private class StringReader : ParquetReader<string?>
+        private class StringReader : AbstractParquetReader<string?>
         {
             protected override IReadOnlyList<ColumnBinding> Columns =>
                 new[] { new ColumnBinding("Value", typeof(string)) };
@@ -48,7 +48,7 @@ namespace Bonsai.Parquet.Tests
             }
         }
 
-        private class NullableIntReader : ParquetReader<int?>
+        private class NullableIntReader : AbstractParquetReader<int?>
         {
             protected override IReadOnlyList<ColumnBinding> Columns =>
                 new[] { new ColumnBinding("Value", typeof(int?)) };
@@ -60,7 +60,7 @@ namespace Bonsai.Parquet.Tests
             }
         }
 
-        private class IntArrayReader : ParquetReader<int[]?>
+        private class IntArrayReader : AbstractParquetReader<int[]?>
         {
             protected override IReadOnlyList<ColumnBinding> Columns =>
                 new[] { new ColumnBinding("Value", typeof(int[])) };
@@ -72,7 +72,7 @@ namespace Bonsai.Parquet.Tests
             }
         }
 
-        private class TupleReader : ParquetReader<Tuple<int, string?>>
+        private class TupleReader : AbstractParquetReader<Tuple<int, string?>>
         {
             protected override IReadOnlyList<ColumnBinding> Columns => new[]
             {
@@ -262,7 +262,7 @@ count, $"Expected cancellation to stop emitting after ~5 items, but received {co
 
         // ─── validation reader helpers ────────────────────────────────────────────
 
-        private class MissingColumnReader : ParquetReader<int>
+        private class MissingColumnReader : AbstractParquetReader<int>
         {
             protected override IReadOnlyList<ColumnBinding> Columns =>
                 new[] { new ColumnBinding("NonExistentColumn", typeof(int)) };
@@ -274,7 +274,7 @@ count, $"Expected cancellation to stop emitting after ~5 items, but received {co
             }
         }
 
-        private class WrongTypeReader : ParquetReader<double>
+        private class WrongTypeReader : AbstractParquetReader<double>
         {
             protected override IReadOnlyList<ColumnBinding> Columns =>
                 new[] { new ColumnBinding("Value", typeof(double)) };
@@ -286,7 +286,7 @@ count, $"Expected cancellation to stop emitting after ~5 items, but received {co
             }
         }
 
-        private class XOnlyReader : ParquetReader<int>
+        private class XOnlyReader : AbstractParquetReader<int>
         {
             protected override IReadOnlyList<ColumnBinding> Columns =>
                 new[] { new ColumnBinding("X", typeof(int)) };

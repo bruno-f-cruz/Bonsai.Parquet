@@ -1,169 +1,231 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Linq.Expressions;
+using System.Reactive.Disposables;
+using System.Reactive.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Reactive.Disposables;
-using System.Reactive.Linq;
 using Bonsai;
+using Bonsai.Expressions;
 using ParquetSharp;
 
 namespace Bonsai.Parquet
 {
-    /// <summary>
-    /// Abstract source operator that reads a Parquet file and emits one <typeparamref name="TRow"/>
-    /// per row. Subclass to declare which columns to read and how to assemble rows from per-column
-    /// typed arrays.
-    /// </summary>
-    [Combinator(MethodName = nameof(Generate))]
     [WorkflowElementCategory(ElementCategory.Source)]
-    public abstract class ParquetReader<TRow>
+    [Description("Reads a Parquet file and emits rows as typed values based on the configured column schema.")]
+    public class ParquetReader : ExpressionBuilder
     {
-        /// <summary>
-        /// Gets or sets the path of the input Parquet file.
-        /// </summary>
+        static readonly Range<int> argumentRange = new Range<int>(0, 0);
+        public override Range<int> ArgumentRange => argumentRange;
+
         [Description("The path of the input Parquet file.")]
         [Editor("Bonsai.Design.OpenFileNameEditor, Bonsai.Design", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         public string? FileName { get; set; }
 
-        /// <summary>
-        /// Gets or sets the number of rows decoded per internal batch.
-        /// This is a decode-throughput knob only; output is always one <c>OnNext</c> per row.
-        /// </summary>
-        [Description("Number of rows decoded per batch. Decode-throughput knob only; output is always one OnNext per row.")]
+        [Description("Number of rows decoded per batch. Throughput knob only; output is always one OnNext per row.")]
         [DefaultValue(4096)]
         public int BatchSize { get; set; } = 4096;
 
-        /// <summary>
-        /// Gets the column bindings that declare which columns to read and their expected C# types.
-        /// </summary>
-        protected abstract IReadOnlyList<ColumnBinding> Columns { get; }
+        [Description("The columns to read from the Parquet file and their expected types.")]
+        [Editor("Bonsai.Parquet.Design.ParquetSchemaEditor, Bonsai.Parquet.Design", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
+        public Collection<ColumnDefinition> Columns { get; set; } = new Collection<ColumnDefinition>();
 
-        /// <summary>
-        /// Called once per decoded batch. Pull the typed column arrays you need from
-        /// <paramref name="batch"/> into local variables, then return a closure that
-        /// constructs one <typeparamref name="TRow"/> from the row index. The base class
-        /// owns the per-row loop and emission.
-        /// </summary>
-        /// <param name="batch">
-        /// The decoded batch. Buffers are framework-owned and reused; the returned factory
-        /// is only invoked before the next call to <see cref="CreateRowFactory"/>, so it is
-        /// safe to close over the column arrays.
-        /// </param>
-        /// <returns>A factory mapping row index → constructed row.</returns>
-        protected abstract Func<int, TRow> CreateRowFactory(IParquetBatch batch);
+        public override Expression Build(IEnumerable<Expression> arguments)
+        {
+            var columns = Columns?.ToArray() ?? Array.Empty<ColumnDefinition>();
+            if (columns.Length == 0)
+                throw new InvalidOperationException("ParquetReader requires at least one column.");
 
-        /// <summary>
-        /// Opens the Parquet file and emits one <typeparamref name="TRow"/> per row.
-        /// </summary>
-        public IObservable<TRow> Generate()
+            var outputType = ComputeOutputType(columns);
+            var generateMethod = GetType()
+                .GetMethod(nameof(Generate), BindingFlags.Instance | BindingFlags.Public)!
+                .MakeGenericMethod(outputType);
+
+            return Expression.Call(Expression.Constant(this), generateMethod);
+        }
+
+        static Type ComputeOutputType(ColumnDefinition[] columns)
+        {
+            if (columns.Length == 1) return columns[0].GetSystemType();
+            return MakeTupleType(columns.Select(c => c.GetSystemType()).ToArray());
+        }
+
+        static readonly Type?[] OpenTupleTypes =
+        {
+            null,           // 0 — unused
+            null,           // 1 — handled as scalar
+            typeof(Tuple<,>),
+            typeof(Tuple<,,>),
+            typeof(Tuple<,,,>),
+            typeof(Tuple<,,,,>),
+            typeof(Tuple<,,,,,>),
+            typeof(Tuple<,,,,,,>),
+            typeof(Tuple<,,,,,,,>), // 8-arg: T1..T7 + TRest
+        };
+
+        static Type MakeTupleType(Type[] types)
+        {
+            if (types.Length <= 7)
+                return OpenTupleTypes[types.Length]!.MakeGenericType(types);
+            // 8+: Tuple<T1,...,T7, Tuple<T8,...>>
+            var rest = MakeTupleType(types.Skip(7).ToArray());
+            var all8 = types.Take(7).Append(rest).ToArray();
+            return OpenTupleTypes[8]!.MakeGenericType(all8);
+        }
+
+        static Func<Array[], int, TRow> BuildRowFactory<TRow>(ColumnDefinition[] columns)
+        {
+            var buffersParam = Expression.Parameter(typeof(Array[]), "b");
+            var indexParam   = Expression.Parameter(typeof(int), "i");
+
+            var body = BuildRowExpression(buffersParam, indexParam, columns, 0);
+            var castBody = body.Type == typeof(TRow)
+                ? body
+                : (Expression)Expression.Convert(body, typeof(TRow));
+
+            return Expression.Lambda<Func<Array[], int, TRow>>(castBody, buffersParam, indexParam).Compile();
+        }
+
+        static Expression BuildRowExpression(
+            Expression buffersParam, Expression indexParam,
+            ColumnDefinition[] columns, int startAt)
+        {
+            int remaining = columns.Length - startAt;
+
+            if (remaining == 1)
+                return BuildColumnAccess(buffersParam, indexParam, columns[startAt], startAt);
+
+            int arity = Math.Min(remaining, 7);
+            var argExprs = new Expression[arity];
+            for (int j = 0; j < arity; j++)
+                argExprs[j] = BuildColumnAccess(buffersParam, indexParam, columns[startAt + j], startAt + j);
+
+            if (remaining <= 7)
+            {
+                var argTypes = argExprs.Select(e => e.Type).ToArray();
+                return Expression.Call(FindTupleCreate(argTypes), argExprs);
+            }
+            else
+            {
+                // >7 columns: nest as Tuple<T1,...,T7, Tuple<T8,...>>
+                var restExpr = BuildRowExpression(buffersParam, indexParam, columns, startAt + 7);
+                var all8 = argExprs.Append(restExpr).ToArray();
+                return Expression.Call(FindTupleCreate(all8.Select(e => e.Type).ToArray()), all8);
+            }
+        }
+
+        static Expression BuildColumnAccess(
+            Expression buffersParam, Expression indexParam,
+            ColumnDefinition col, int bufferIndex)
+        {
+            var elemType  = col.GetSystemType();
+            // ((elemType[])buffers[bufferIndex])[i]
+            var arrayElem  = Expression.ArrayIndex(buffersParam, Expression.Constant(bufferIndex));
+            var typedArray = Expression.Convert(arrayElem, elemType.MakeArrayType());
+            return Expression.ArrayIndex(typedArray, indexParam);
+        }
+
+        static MethodInfo FindTupleCreate(Type[] argTypes)
+        {
+            return typeof(Tuple)
+                .GetMethods(BindingFlags.Static | BindingFlags.Public)
+                .First(m => m.Name == "Create" && m.GetParameters().Length == argTypes.Length)
+                .MakeGenericMethod(argTypes);
+        }
+
+        public IObservable<TRow> Generate<TRow>()
         {
             return Observable.Create<TRow>(observer =>
             {
-                var fileName = FileName;
-                if (string.IsNullOrEmpty(fileName))
-                    throw new InvalidOperationException("A valid file path must be specified.");
-                if (!File.Exists(fileName))
-                    throw new FileNotFoundException($"Parquet file not found: '{fileName}'.", fileName);
-
-                var batchSize = BatchSize;
-                if (batchSize <= 0)
-                    throw new InvalidOperationException("BatchSize must be greater than zero.");
-
-                var bindings = Columns?.ToList();
-                if (bindings == null || bindings.Count == 0)
-                    throw new InvalidOperationException("Columns must contain at least one ColumnBinding.");
-
-                var namesSeen = new HashSet<string>(StringComparer.Ordinal);
-                foreach (var b in bindings)
-                {
-                    if (!namesSeen.Add(b.Name))
-                        throw new InvalidOperationException($"Duplicate column name declared: '{b.Name}'.");
-                }
-
                 var cts = new CancellationTokenSource();
 
                 Task.Run(() =>
                 {
                     try
                     {
+                        var fileName = FileName;
+                        if (string.IsNullOrEmpty(fileName))
+                            throw new InvalidOperationException("A valid file path must be specified.");
+                        if (!File.Exists(fileName))
+                            throw new FileNotFoundException($"Parquet file not found: '{fileName}'.", fileName);
+
+                        var batchSize = BatchSize;
+                        if (batchSize <= 0)
+                            throw new InvalidOperationException("BatchSize must be greater than zero.");
+
+                        var columnDefs = Columns?.ToArray() ?? Array.Empty<ColumnDefinition>();
+                        if (columnDefs.Length == 0)
+                            throw new InvalidOperationException("Columns must contain at least one entry.");
+
+                        var bindings = columnDefs
+                            .Select(c => new ColumnBinding(c.Name, c.GetSystemType()))
+                            .ToList();
+
+                        var seen = new HashSet<string>(StringComparer.Ordinal);
+                        foreach (var b in bindings)
+                            if (!seen.Add(b.Name))
+                                throw new InvalidOperationException($"Duplicate column name: '{b.Name}'.");
+
+                        // Compiled once at subscribe time; the expression tree builds the typed
+                        // array accesses so there is no boxing or dictionary lookup per row.
+                        var rowFactory = BuildRowFactory<TRow>(columnDefs);
+
                         using var fileReader = new ParquetFileReader(fileName);
                         var schema = fileReader.FileMetaData.Schema;
 
-                        // Use ColumnRoot(i) to get the top-level field name for each leaf column.
-                        // This correctly handles list (T[]) columns where the leaf is named "item"
-                        // but the top-level field carries the user-visible name.
+                        // ColumnRoot gives the top-level field name (same reason as AbstractParquetReader).
                         var fileColumnMap = new Dictionary<string, int>(schema.NumColumns, StringComparer.Ordinal);
                         for (int i = 0; i < schema.NumColumns; i++)
                             fileColumnMap[schema.ColumnRoot(i).Name] = i;
 
                         var columnIndices = new int[bindings.Count];
-                        var buffers = new Array[bindings.Count];
+                        var buffers       = new Array[bindings.Count];
 
                         for (int i = 0; i < bindings.Count; i++)
                         {
-                            var binding = bindings[i];
-
-                            if (!fileColumnMap.TryGetValue(binding.Name, out int colIdx))
+                            if (!fileColumnMap.TryGetValue(bindings[i].Name, out int colIdx))
                             {
                                 var available = string.Join(", ", fileColumnMap.Keys);
                                 throw new InvalidOperationException(
-                                    $"Column '{binding.Name}' not found in file. Available columns: {available}");
+                                    $"Column '{bindings[i].Name}' not found in file. Available: {available}");
                             }
-
                             columnIndices[i] = colIdx;
-                            buffers[i] = Array.CreateInstance(binding.LogicalType, batchSize);
+                            buffers[i] = Array.CreateInstance(bindings[i].LogicalType, batchSize);
                         }
 
-                        // Type validation: open row group 0 briefly to discover the actual C# type
-                        // that ParquetSharp uses for each column (non-generic LogicalReader reflects it).
-                        // Skipped for empty files (no rows → no type mismatch can occur at runtime).
                         if (fileReader.FileMetaData.NumRowGroups > 0)
                         {
-                            using var validationRg = fileReader.RowGroup(0);
+                            using var vRg = fileReader.RowGroup(0);
                             for (int i = 0; i < bindings.Count; i++)
                             {
-                                using var untypedReader = validationRg.Column(columnIndices[i]).LogicalReader();
-                                var readerType = untypedReader.GetType();
-                                var actualType = readerType.IsGenericType
-                                    ? readerType.GetGenericArguments()[0]
-                                    : null;
-
-                                if (actualType != bindings[i].LogicalType)
-                                {
+                                using var ur = vRg.Column(columnIndices[i]).LogicalReader();
+                                var rType = ur.GetType();
+                                var actual = rType.IsGenericType ? rType.GetGenericArguments()[0] : null;
+                                if (actual != bindings[i].LogicalType)
                                     throw new InvalidOperationException(
-                                        $"Column '{bindings[i].Name}': expected type " +
-                                        $"'{bindings[i].LogicalType.FullName}', but file has type " +
-                                        $"'{actualType?.FullName ?? "unknown"}'.");
-                                }
+                                        $"Column '{bindings[i].Name}': expected '{bindings[i].LogicalType.FullName}', file has '{actual?.FullName ?? "unknown"}'.");
                             }
                         }
 
-                        // Build per-column decoder factories (MakeGenericMethod once per column).
-                        // Each factory opens a typed LogicalColumnReader for one row group and
-                        // returns a ColumnDecoder that reads batches into the pre-allocated buffer.
-                        var decoderFactories = new Func<RowGroupReader, ColumnDecoder>[bindings.Count];
+                        // MakeGenericMethod once per column, not per batch.
                         var openMethod = typeof(ColumnDecoder)
-                            .GetMethod(nameof(ColumnDecoder.Open), BindingFlags.Static | BindingFlags.NonPublic)!;
-
+                            .GetMethod("Open", BindingFlags.Static | BindingFlags.NonPublic)!;
+                        var decoderFactories = new Func<RowGroupReader, ColumnDecoder>[bindings.Count];
                         for (int i = 0; i < bindings.Count; i++)
                         {
-                            var openGeneric = openMethod.MakeGenericMethod(bindings[i].LogicalType);
-                            var capturedBuf = buffers[i];
-                            var capturedIdx = columnIndices[i];
-                            decoderFactories[i] = rg => (ColumnDecoder)openGeneric.Invoke(
-                                null, new object[] { rg, capturedIdx, capturedBuf })!;
+                            var openGeneric  = openMethod.MakeGenericMethod(bindings[i].LogicalType);
+                            var capturedBuf  = buffers[i];
+                            var capturedIdx  = columnIndices[i];
+                            decoderFactories[i] = rg =>
+                                (ColumnDecoder)openGeneric.Invoke(null, new object[] { rg, capturedIdx, capturedBuf })!;
                         }
 
-                        var batch = new ParquetBatch(
-                            bindings.Select(b => b.Name).ToArray(),
-                            buffers);
-
                         int numRowGroups = fileReader.FileMetaData.NumRowGroups;
-
                         for (int rg = 0; rg < numRowGroups; rg++)
                         {
                             if (cts.IsCancellationRequested) return;
@@ -171,8 +233,6 @@ namespace Bonsai.Parquet
                             using var rowGroupReader = fileReader.RowGroup(rg);
                             long numRowsInGroup = rowGroupReader.MetaData.NumRows;
 
-                            // Open one typed column reader per column for this row group.
-                            // Each reader maintains its read-position across batches within the group.
                             var decoders = new ColumnDecoder[bindings.Count];
                             try
                             {
@@ -185,16 +245,13 @@ namespace Bonsai.Parquet
                                     if (cts.IsCancellationRequested) return;
 
                                     int count = (int)Math.Min(batchSize, numRowsInGroup - rowsRead);
-
                                     for (int c = 0; c < decoders.Length; c++)
                                         decoders[c].Read(count);
 
-                                    batch.SetRowCount(count);
-                                    var factory = CreateRowFactory(batch);
                                     for (int r = 0; r < count; r++)
                                     {
                                         if (cts.IsCancellationRequested) return;
-                                        observer.OnNext(factory(r));
+                                        observer.OnNext(rowFactory(buffers, r));
                                     }
 
                                     rowsRead += count;
@@ -219,68 +276,6 @@ namespace Bonsai.Parquet
 
                 return Disposable.Create(() => cts.Cancel());
             });
-        }
-    }
-
-    /// <summary>
-    /// Internal batch view passed to <see cref="ParquetReader{TRow}.ReadBatch"/>.
-    /// Holds a dictionary of pre-allocated, framework-owned column buffers.
-    /// </summary>
-    internal sealed class ParquetBatch : IParquetBatch
-    {
-        readonly Dictionary<string, Array> _buffers;
-        int _rowCount;
-
-        internal ParquetBatch(string[] names, Array[] arrays)
-        {
-            _buffers = new Dictionary<string, Array>(names.Length, StringComparer.Ordinal);
-            for (int i = 0; i < names.Length; i++)
-                _buffers[names[i]] = arrays[i];
-        }
-
-        internal void SetRowCount(int rowCount) => _rowCount = rowCount;
-
-        public int RowCount => _rowCount;
-
-        public T[] Column<T>(string name)
-        {
-            if (!_buffers.TryGetValue(name, out var arr))
-                throw new KeyNotFoundException($"Column '{name}' is not declared in this reader's Columns list.");
-            return (T[])arr;
-        }
-    }
-
-    /// <summary>
-    /// Wraps a typed <see cref="LogicalColumnReader{TElement}"/> opened for one row group.
-    /// Instances are created per row group and disposed at row group end.
-    /// The generic <see cref="Open{T}"/> factory is resolved once at subscribe time via
-    /// <c>MakeGenericMethod</c>, eliminating per-batch reflection overhead.
-    /// </summary>
-    internal abstract class ColumnDecoder : IDisposable
-    {
-        public abstract void Read(int count);
-        public abstract void Dispose();
-
-        internal static ColumnDecoder Open<T>(RowGroupReader rowGroup, int columnIndex, T[] buffer)
-        {
-            var reader = rowGroup.Column(columnIndex).LogicalReader<T>();
-            return new TypedDecoder<T>(reader, buffer);
-        }
-
-        private sealed class TypedDecoder<T> : ColumnDecoder
-        {
-            readonly LogicalColumnReader<T> _reader;
-            readonly T[] _buffer;
-
-            internal TypedDecoder(LogicalColumnReader<T> reader, T[] buffer)
-            {
-                _reader = reader;
-                _buffer = buffer;
-            }
-
-            public override void Read(int count) => _reader.ReadBatch(_buffer, 0, count);
-
-            public override void Dispose() => _reader.Dispose();
         }
     }
 }
