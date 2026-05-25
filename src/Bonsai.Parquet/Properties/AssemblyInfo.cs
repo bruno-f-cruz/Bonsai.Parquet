@@ -7,4 +7,4 @@ using System.Runtime.CompilerServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: XmlNamespacePrefix("clr-namespace:Bonsai.Parquet", "parquet")]
-[assembly: WorkflowNamespaceIcon("Bonsai:ElementIcon.Save")]
+[assembly: WorkflowNamespaceIcon("Bonsai:ElementIcon.IO")]
