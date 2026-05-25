@@ -19,9 +19,7 @@ complete when the file is exhausted.
 
 ---
 
-## `ParquetReader` — editor-driven
-
-### A minimal reader
+## `ParquetReader`
 
 The following workflow reads back the single-column file produced by the
 [Writing parquet files](xref:writing-parquet) example:
@@ -53,55 +51,16 @@ Each column entry exposes four properties:
 | `IsNullable` | When true, the column is read as `Nullable<T>` (`int?`, `double?`, …). Has no effect on reference types (`String`, `Bytes`). |
 | `IsArray` | When true, the column is read as `T[]` — a parquet LIST column. Takes precedence over `IsNullable`. |
 
-### Column types
+Note: some parquet types may not yet be supported by `ParquetReader`'s editor-driven configuration. In that case, use `AbstractParquetReader<TRow>` for full control over the column schema.
 
-`Type` is a `ParquetColumnType` enum value that identifies the scalar element
-type of the column. The corresponding C# type used for decoding is:
-
-| `ParquetColumnType` | C# type | Parquet physical / logical |
-|---|---|---|
-| `Bool` | `bool` | `BOOLEAN` |
-| `SByte` | `sbyte` | `INT32 / INT(8, true)` |
-| `Byte` | `byte` | `INT32 / INT(8, false)` |
-| `Int16` | `short` | `INT32 / INT(16, true)` |
-| `UInt16` | `ushort` | `INT32 / INT(16, false)` |
-| `Int32` | `int` | `INT32` |
-| `UInt32` | `uint` | `INT32 / INT(32, false)` |
-| `Int64` | `long` | `INT64` |
-| `UInt64` | `ulong` | `INT64 / INT(64, false)` |
-| `Float` | `float` | `FLOAT` |
-| `Double` | `double` | `DOUBLE` |
-| `Decimal` | `decimal` | `FIXED_LEN_BYTE_ARRAY / DECIMAL` |
-| `String` | `string` | `BYTE_ARRAY / STRING` |
-| `Bytes` | `byte[]` | `BYTE_ARRAY` |
-| `DateTime` | `DateTime` | `INT64 / TIMESTAMP(MICROS)` |
-| `TimeSpan` | `TimeSpan` | `INT64 / TIME(MICROS)` |
-| `Guid` | `Guid` | `FIXED_LEN_BYTE_ARRAY / UUID` |
-
-`IsNullable = true` wraps the C# type in `Nullable<T>` (e.g. `int?`).
-`IsArray = true` wraps it in `T[]` (e.g. `int[]`). Both flags together are not
-supported — use `IsArray` for LIST columns; nullability of individual list
-elements is not configurable from the editor.
 
 ### Output type
 
-The output type emitted downstream depends on how many columns are configured:
-
-| Columns | Output type |
-|---|---|
-| 1 | The column's scalar C# type (e.g. `long`) |
-| 2 | `Tuple<T1, T2>` |
-| 3 | `Tuple<T1, T2, T3>` |
-| 4–7 | `Tuple<T1, …, T7>` |
-| 8+ | Nested: `Tuple<T1, …, T7, Tuple<T8, …>>` |
-
-For the single-column example above the output is `long`. Adding a second
-column of type `Double` would change the output to `Tuple<long, double>`.
-Downstream operators see the concrete type, not `object`.
+If a single column is selected, the operator will simply emit an Observable of that column's type. Otherwise, if multiple columns are selected, the output will be flattened into a `Tuple<...>` type with one element per column. The column types are inferred from the schema and the `IsNullable`/`IsArray` settings. For the single-column example above the output is `long`.
 
 ---
 
-## `AbstractParquetReader<TRow>` — code-first
+## `AbstractParquetReader<TRow>`
 
 Use this when you need a named output type, want C# value tuples, or need a row
 type that does not map cleanly to a Bonsai `Tuple<…>`.
@@ -175,76 +134,6 @@ public class TemperatureReader : AbstractParquetReader<double>
 }
 ```
 
-**Value tuple** — idiomatic for multi-column rows with named fields:
-
-```csharp
-public class SensorReader : AbstractParquetReader<(DateTime Time, double Value, int Channel)>
-{
-    protected override IReadOnlyList<ColumnBinding> Columns => new[]
-    {
-        new ColumnBinding("time",    typeof(DateTime)),
-        new ColumnBinding("value",  typeof(double)),
-        new ColumnBinding("channel", typeof(int)),
-    };
-
-    protected override Func<int, (DateTime, double, int)> CreateRowFactory(IParquetBatch batch)
-    {
-        var t = batch.Column<DateTime>("time");
-        var v = batch.Column<double>("value");
-        var c = batch.Column<int>("channel");
-        return i => (t[i], v[i], c[i]);
-    }
-}
-```
-
-**POCO** — use when downstream code expects a named class:
-
-```csharp
-public class SensorRow
-{
-    public DateTime Time { get; set; }
-    public double Value { get; set; }
-}
-
-public class SensorPocoReader : AbstractParquetReader<SensorRow>
-{
-    protected override IReadOnlyList<ColumnBinding> Columns => new[]
-    {
-        new ColumnBinding("time",  typeof(DateTime)),
-        new ColumnBinding("value", typeof(double)),
-    };
-
-    protected override Func<int, SensorRow> CreateRowFactory(IParquetBatch batch)
-    {
-        var t = batch.Column<DateTime>("time");
-        var v = batch.Column<double>("value");
-        return i => new SensorRow { Time = t[i], Value = v[i] };
-    }
-}
-```
-
-### Choosing the `LogicalType` for a `ColumnBinding`
-
-The second argument to `ColumnBinding` is the C# type that ParquetSharp maps
-the column to. It must match what was written (see the
-[type table](#column-types) above for the mapping). Use `typeof(T?)` for
-nullable columns and `typeof(T[])` for LIST columns:
-
-| File column | `typeof(...)` |
-|---|---|
-| Non-null int | `typeof(int)` |
-| Nullable int | `typeof(int?)` |
-| Array of int | `typeof(int[])` |
-| Non-null double | `typeof(double)` |
-| Nullable double | `typeof(double?)` |
-| String | `typeof(string)` |
-| DateTime | `typeof(DateTime)` |
-| Nullable DateTime | `typeof(DateTime?)` |
-| Raw bytes | `typeof(byte[])` |
-| Array of double | `typeof(double[])` |
-
----
-
 ## Schema validation
 
 Both operators validate the schema on subscription. For each declared column:
@@ -262,7 +151,7 @@ can subset a richer file without breaking when new columns are added upstream.
 The `BatchSize` property controls how many rows are decoded into memory at a
 time. It is a decode-throughput knob — both operators still emit one `OnNext`
 per row. Larger batches amortise per-batch overhead at the cost of higher peak
-memory. The default of 4096 is suitable for most workflows.
+memory.
 
 <!-- Reference Style Links -->
 [`ParquetReader`]: xref:Bonsai.Parquet.ParquetReader
