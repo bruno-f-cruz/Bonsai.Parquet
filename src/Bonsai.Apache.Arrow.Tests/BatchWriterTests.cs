@@ -125,6 +125,7 @@ namespace Bonsai.Apache.Arrow.Tests
                 var writer = new A.ArrowBatchWriter<int>(path, 2);
                 writer.Write(1); writer.Dispose(); writer.Dispose();
                 Assert.ThrowsExactly<ObjectDisposedException>(() => writer.Write(2));
+                Assert.ThrowsExactly<ObjectDisposedException>(() => writer.WriteBatch(new[] { 2 }));
                 Assert.ThrowsExactly<ObjectDisposedException>(writer.Flush);
             }
             else
@@ -132,7 +133,28 @@ namespace Bonsai.Apache.Arrow.Tests
                 var writer = new P.ParquetBatchWriter<int>(path, 2);
                 writer.Write(1); writer.Dispose(); writer.Dispose();
                 Assert.ThrowsExactly<ObjectDisposedException>(() => writer.Write(2));
+                Assert.ThrowsExactly<ObjectDisposedException>(() => writer.WriteBatch(new[] { 2 }));
                 Assert.ThrowsExactly<ObjectDisposedException>(writer.Flush);
+            }
+            CollectionAssert.AreEqual(new[] { 1 }, Read(format));
+        }
+
+        [TestMethod]
+        [DataRow("Arrow")]
+        [DataRow("Parquet")]
+        public void ExplicitBatchesRequireACustomConverterAndLeavePendingItemsIntact(string format)
+        {
+            if (format == "Arrow")
+            {
+                using var writer = new A.ArrowBatchWriter<int>(path, 2);
+                writer.Write(1);
+                Assert.ThrowsExactly<InvalidOperationException>(() => writer.WriteBatch(new[] { 2 }));
+            }
+            else
+            {
+                using var writer = new P.ParquetBatchWriter<int>(path, 2);
+                writer.Write(1);
+                Assert.ThrowsExactly<InvalidOperationException>(() => writer.WriteBatch(new[] { 2 }));
             }
             CollectionAssert.AreEqual(new[] { 1 }, Read(format));
         }

@@ -76,6 +76,19 @@ namespace Bonsai.Apache.Parquet
             if (bufferedRows >= bufferSize) Flush();
         }
 
+        /// <summary>Writes an externally grouped batch immediately using the custom converter, without size-based splitting.</summary>
+        /// <remarks>Requires the custom-schema constructor. Pending Write calls are flushed first; empty batches are ignored.</remarks>
+        public void WriteBatch(IList<T> batch)
+        {
+            if (disposed) throw new ObjectDisposedException(GetType().Name);
+            if (batch == null) throw new ArgumentNullException(nameof(batch));
+            if (writeBatch == null) throw new InvalidOperationException("Explicit batches require a custom batch converter.");
+            if (batch.Count == 0) return;
+            if (bufferedRows > 0) Flush();
+            try { WriteRowGroup(batch); stream.Flush(); }
+            catch { failed = true; throw; }
+        }
+
         /// <summary>Writes pending items and flushes the file stream.</summary>
         public void Flush()
         {
@@ -87,17 +100,22 @@ namespace Bonsai.Apache.Parquet
         void FlushRowGroup()
         {
             if (bufferedRows == 0) return;
+            WriteRowGroup(items);
+            items?.Clear();
+            foreach (var buffer in buffers) buffer.Clear(0, bufferedRows);
+            bufferedRows = 0;
+        }
+
+        void WriteRowGroup(IList<T>? batch)
+        {
             using var rowGroupWriter = fileWriter.AppendRowGroup();
-            if (writeBatch != null) writeBatch(items!, rowGroupWriter);
+            if (writeBatch != null) writeBatch(batch!, rowGroupWriter);
             else foreach (var buffer in buffers)
             {
                 using var column = rowGroupWriter.NextColumn();
                 buffer.Write(column, bufferedRows);
             }
             rowGroupWriter.Close();
-            items?.Clear();
-            foreach (var buffer in buffers) buffer.Clear(0, bufferedRows);
-            bufferedRows = 0;
         }
 
         /// <summary>Writes the final partial batch and footer, then closes the file.</summary>

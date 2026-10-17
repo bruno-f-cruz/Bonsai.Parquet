@@ -69,6 +69,24 @@ namespace Bonsai.Apache.Arrow
             if (bufferedRows >= bufferSize) Flush();
         }
 
+        /// <summary>Writes an externally grouped batch immediately using the custom converter, without size-based splitting.</summary>
+        /// <remarks>Requires the custom-schema constructor. Pending Write calls are flushed first; empty batches are ignored.</remarks>
+        public void WriteBatch(IList<T> batch)
+        {
+            if (disposed) throw new ObjectDisposedException(GetType().Name);
+            if (batch == null) throw new ArgumentNullException(nameof(batch));
+            if (createRecordBatch == null) throw new InvalidOperationException("Explicit batches require a custom batch converter.");
+            if (batch.Count == 0) return;
+            if (bufferedRows > 0) Flush();
+            try
+            {
+                using var recordBatch = createRecordBatch(batch, schema);
+                writer.Write(recordBatch);
+                writer.Flush();
+            }
+            catch { failed = true; throw; }
+        }
+
         /// <summary>Writes all pending items and flushes the file stream.</summary>
         public void Flush()
         {

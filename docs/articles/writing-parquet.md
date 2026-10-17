@@ -48,5 +48,6 @@ an unfinished file unreadable.
 
 For direct C# use, `ParquetBatchWriter<T>` provides `Write`, `Flush`, and
 `Dispose`, with inferred columns or an explicit schema and batch callback.
+Custom-schema writers also accept grouped inputs through `WriteBatch`.
 
 [`ParquetWriter`]: xref:Bonsai.Apache.Parquet.ParquetWriter

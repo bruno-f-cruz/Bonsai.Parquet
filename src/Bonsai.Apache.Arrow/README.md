@@ -34,7 +34,8 @@ GUIDs, enums, nullable values, and lists.
 `ArrowWriter` also accepts `RecordBatch` sequences, preserving their schema and
 metadata. `ArrowBatchWriter<T>` can infer columns or accept a schema and a custom batch
 converter. Both it and `ParquetBatchWriter<T>` expose `Write`, `Flush`, and
-`Dispose`; call them serially.
+`Dispose`; call them serially. Custom-schema writers also expose `WriteBatch`
+for callers that group inputs themselves.
 
 Python can read the files with `pyarrow.ipc.open_file(path)` or
 `pyarrow.feather.read_table(path)`.
