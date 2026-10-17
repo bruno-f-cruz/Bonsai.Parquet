@@ -1,35 +1,32 @@
-# Bonsai.Parquet
+# Bonsai.Apache
 
-`Bonsai.Parquet` exposes [Apache Parquet](https://parquet.apache.org/) file I/O
-as Bonsai workflow operators, so streaming observable sequences can be recorded
-to (and replayed from) a compact, columnar, strongly-typed binary format
-without leaving the workflow.
+Read and write [Apache Parquet](https://parquet.apache.org/) and
+[Apache Arrow](https://arrow.apache.org/) IPC files in Bonsai.
 
 ## Features
 
-- `ParquetWriter` sink that writes each element of a sequence as a row in a
-  parquet file, mirroring the shape of Bonsai's built-in `CsvWriter`: schema
-  inferred from the source element type, member-path `Selector`,
-  `PathSuffix`/`Overwrite` integration, and buffered row groups flushed on
-  size or dispose.
-- `ParquetReader<TRow>` abstract base class for declaring strongly-typed
-  parquet sources by subclassing — overrides describe the expected columns and
-  the per-batch row factory, and the base class handles the read loop,
-  schema validation, and cancellation.
-- Support for the common Bonsai-friendly C# types out of the box: the integer
-  widths, `float`, `double`, `decimal`, `string`, `byte[]`, `DateTime`,
-  `TimeSpan`, `Guid`, their `Nullable<T>` counterparts, arrays / `IList<T>` of
-  those types as parquet `LIST`, and enums as their underlying integer.
+- `ParquetWriter` and `ArrowWriter` record sequences with schemas inferred from
+  the input type. Use `Selector` to choose members, including nested paths.
+- `ParquetReader` and `ArrowReader` read configured columns as scalar values or
+  tuples. Their schema editors can load column definitions from a file.
+- Supports numeric types, strings, binary data, dates, durations, GUIDs, enums,
+  nullable values, and lists.
+- Background writing, configurable batch sizes, and compression.
 
 ## Installation
 
-Install `Bonsai.Parquet` through the Bonsai package manager. The package
-brings in `ParquetSharp` (the underlying managed wrapper over Apache Arrow's
-parquet implementation) and its native binaries, so no additional setup is
-required on a supported platform.
+Install `Bonsai.Apache.Parquet` or `Bonsai.Apache.Arrow` through the Bonsai package
+manager. Install the matching `.Design` package for the reader's schema editor.
 
-## Feedback & Contributing
+See [Writing Parquet](articles/writing-parquet.md),
+[Reading Parquet](articles/reading-parquet.md), and
+[Writing and reading Arrow](articles/writing-arrow.md).
 
-`Bonsai.Parquet` is released as open source under the
-[MIT license](https://licenses.nuget.org/MIT). Bug reports and contributions
-are welcome at the GitHub repository.
+## Development
+
+Open `Bonsai.Apache.sln`, select **Bonsai (all libraries)**, and press F5 to try
+both packages in the test workflow.
+
+## License
+
+[MIT](https://licenses.nuget.org/MIT).

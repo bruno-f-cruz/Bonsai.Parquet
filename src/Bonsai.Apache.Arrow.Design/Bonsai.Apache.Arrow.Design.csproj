@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Title>Bonsai - Apache Arrow Design</Title>
+    <Description>Dear ImGui schema editor for Bonsai.Apache.Arrow.</Description>
+    <TargetFrameworks>net472</TargetFrameworks>
+    <UseWindowsForms>true</UseWindowsForms>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <DefineConstants>$(DefineConstants);BONSAI_ARROW</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\Design\SchemaEditor.cs" Link="Common\SchemaEditor.cs" />
+    <PackageReference Include="Bonsai.ImGui.Design" Version="0.2.0" />
+    <ProjectReference Include="..\Bonsai.Apache.Arrow\Bonsai.Apache.Arrow.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "Bonsai (all libraries)": {
+      "commandName": "Executable",
+      "executablePath": "bonsai",
+      "commandLineArgs": "\"$(MSBuildProjectDirectory)\\..\\Bonsai.Apache.Arrow.Tests\\Workflows\\api-tests.bonsai\" --lib:\"$(TargetDir).\"",
+      "workingDirectory": "$(MSBuildProjectDirectory)\\..\\..",
+      "nativeDebugging": true
+    }
+  }
+}

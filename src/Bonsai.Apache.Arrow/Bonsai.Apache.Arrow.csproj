@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Title>Bonsai - Apache Arrow</Title>
+    <Description>Bonsai operators and reusable batch writers for Apache Arrow IPC files.</Description>
+    <PackageTags>Bonsai Rx Arrow Apache Columnar IPC Feather</PackageTags>
+    <TargetFrameworks>net472;net8.0;net8.0-windows</TargetFrameworks>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\Runtime\*.cs" Link="Common\%(Filename)%(Extension)" />
+    <PackageReference Include="Bonsai.Core" Version="2.9.1" />
+    <PackageReference Include="Bonsai.System" Version="2.9.1" />
+    <PackageReference Include="Apache.Arrow" Version="23.0.0" />
+    <PackageReference Include="Apache.Arrow.Compression" Version="23.0.0" />
+  </ItemGroup>
+</Project>

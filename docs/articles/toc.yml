@@ -3,3 +3,4 @@
 - name: Workflow guide
 - href: writing-parquet.md
 - href: reading-parquet.md
+- href: writing-arrow.md

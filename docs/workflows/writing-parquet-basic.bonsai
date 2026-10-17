@@ -2,7 +2,7 @@
 <WorkflowBuilder Version="2.9.0"
                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                  xmlns:rx="clr-namespace:Bonsai.Reactive;assembly=Bonsai.Core"
-                 xmlns:parquet="clr-namespace:Bonsai.Parquet;assembly=Bonsai.Parquet"
+                 xmlns:parquet="clr-namespace:Bonsai.Apache.Parquet;assembly=Bonsai.Apache.Parquet"
                  xmlns="https://bonsai-rx.org/2018/workflow">
   <Workflow>
     <Nodes>
@@ -17,8 +17,8 @@
           <parquet:FileName>samples.parquet</parquet:FileName>
           <parquet:Suffix>None</parquet:Suffix>
           <parquet:Overwrite>true</parquet:Overwrite>
-          <parquet:CompressionMethod>Snappy</parquet:CompressionMethod>
-          <parquet:RowGroupSize>100000</parquet:RowGroupSize>
+          <parquet:CompressionMethod>Zstd</parquet:CompressionMethod>
+          <parquet:BatchSize>100000</parquet:BatchSize>
         </Combinator>
       </Expression>
     </Nodes>

@@ -4,7 +4,7 @@
     <PackageProjectUrl>https://bonsai-rx.org/Bonsai.Parquet</PackageProjectUrl>
     <RepositoryUrl>https://github.com/bruno-f-cruz/Bonsai.Parquet</RepositoryUrl>
 
-    <Authors>Bonsai.Parquet Authors</Authors>
+    <Authors>Bonsai.Apache Authors</Authors>
     <Copyright>Copyright © Bonsai Foundation CIC and Contributors</Copyright>
   </PropertyGroup>
 </Project>

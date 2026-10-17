@@ -1,0 +1,979 @@
+<?xml version="1.0" encoding="utf-8"?>
+<WorkflowBuilder Version="2.9.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:rx="clr-namespace:Bonsai.Reactive;assembly=Bonsai.Core" xmlns:parquet="clr-namespace:Bonsai.Apache.Parquet;assembly=Bonsai.Apache.Parquet" xmlns:arrow="clr-namespace:Bonsai.Apache.Arrow;assembly=Bonsai.Apache.Arrow" xmlns:scr="clr-namespace:Bonsai.Scripting.Expressions;assembly=Bonsai.Scripting.Expressions" xmlns:io="clr-namespace:Bonsai.IO;assembly=Bonsai.System" xmlns="https://bonsai-rx.org/2018/workflow">
+  <Workflow>
+    <Nodes>
+      <Expression xsi:type="GroupWorkflow">
+        <Name>01 Scalar integers</Name>
+        <Description>Write 12 rows through ParquetWriter and ArrowWriter, then compare both typed readers. Output files: artifacts/api-tests/scalar.*; overwrite is enabled. Open Columns on either reader to test its schema editor.</Description>
+        <Workflow>
+          <Nodes>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Range">
+                <rx:Start>0</rx:Start>
+                <rx:Count>12</rx:Count>
+              </Combinator>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="parquet:ParquetWriter">
+                <parquet:FileName>../../../artifacts/api-tests/scalar.parquet</parquet:FileName>
+                <parquet:Suffix>None</parquet:Suffix>
+                <parquet:Overwrite>true</parquet:Overwrite>
+                <parquet:CompressionMethod>Uncompressed</parquet:CompressionMethod>
+                <parquet:BatchSize>5</parquet:BatchSize>
+                <parquet:Buffered>true</parquet:Buffered>
+                <parquet:QueueCapacity>16</parquet:QueueCapacity>
+                <parquet:FlushInterval>PT0.05S</parquet:FlushInterval>
+              </Combinator>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="arrow:ArrowWriter">
+                <arrow:FileName>../../../artifacts/api-tests/scalar.arrow</arrow:FileName>
+                <arrow:Suffix>None</arrow:Suffix>
+                <arrow:Overwrite>true</arrow:Overwrite>
+                <arrow:BatchSize>5</arrow:BatchSize>
+                <arrow:Buffered>true</arrow:Buffered>
+                <arrow:QueueCapacity>16</arrow:QueueCapacity>
+                <arrow:FlushInterval>PT0.05S</arrow:FlushInterval>
+              </Combinator>
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Name>Only completion triggers the read stage</scr:Name>
+              <scr:Expression>true</scr:Expression>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:IgnoreElements" />
+            </Expression>
+            <Expression xsi:type="parquet:ParquetReader">
+              <parquet:FileName>../../../artifacts/api-tests/scalar.parquet</parquet:FileName>
+              <parquet:BatchSize>4</parquet:BatchSize>
+              <parquet:Columns>
+                <parquet:ColumnDefinition>
+                  <parquet:Name>Value</parquet:Name>
+                  <parquet:Type>Int32</parquet:Type>
+                </parquet:ColumnDefinition>
+              </parquet:Columns>
+            </Expression>
+            <Expression xsi:type="arrow:ArrowReader">
+              <arrow:FileName>../../../artifacts/api-tests/scalar.arrow</arrow:FileName>
+              <arrow:Columns>
+                <arrow:ColumnDefinition>
+                  <arrow:Name>Value</arrow:Name>
+                  <arrow:Type>Int32</arrow:Type>
+                </arrow:ColumnDefinition>
+              </arrow:Columns>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Zip" />
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Name>Compare Parquet and Arrow rows</scr:Name>
+              <scr:Expression>Item1 == Item2 &amp;&amp; Item1 &gt;= 0 &amp;&amp; Item1 &lt; 12</scr:Expression>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:ToArray" />
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Name>Case result</scr:Name>
+              <scr:Expression>it.Length == 12 &amp;&amp; it.All(it)</scr:Expression>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Concat" />
+            </Expression>
+            <Expression xsi:type="WorkflowOutput" />
+          </Nodes>
+          <Edges>
+            <Edge From="0" To="1" Label="Source1" />
+            <Edge From="1" To="2" Label="Source1" />
+            <Edge From="2" To="3" Label="Source1" />
+            <Edge From="3" To="4" Label="Source1" />
+            <Edge From="4" To="11" Label="Source1" />
+            <Edge From="5" To="7" Label="Source1" />
+            <Edge From="6" To="7" Label="Source2" />
+            <Edge From="7" To="8" Label="Source1" />
+            <Edge From="8" To="9" Label="Source1" />
+            <Edge From="9" To="10" Label="Source1" />
+            <Edge From="10" To="11" Label="Source2" />
+            <Edge From="11" To="12" Label="Source1" />
+          </Edges>
+        </Workflow>
+      </Expression>
+      <Expression xsi:type="GroupWorkflow">
+        <Name>02 Named records</Name>
+        <Description>Write 12 rows through ParquetWriter and ArrowWriter, then compare both typed readers. Output files: artifacts/api-tests/records.*; overwrite is enabled. Open Columns on either reader to test its schema editor.</Description>
+        <Workflow>
+          <Nodes>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Range">
+                <rx:Start>0</rx:Start>
+                <rx:Count>12</rx:Count>
+              </Combinator>
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Name>Create sample values</scr:Name>
+              <scr:Expression>new(it as Index, (it * 0.25) as Value, ("sample-" + it) as Label)</scr:Expression>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="parquet:ParquetWriter">
+                <parquet:FileName>../../../artifacts/api-tests/records.parquet</parquet:FileName>
+                <parquet:Suffix>None</parquet:Suffix>
+                <parquet:Overwrite>true</parquet:Overwrite>
+                <parquet:CompressionMethod>Uncompressed</parquet:CompressionMethod>
+                <parquet:BatchSize>5</parquet:BatchSize>
+                <parquet:Buffered>true</parquet:Buffered>
+                <parquet:QueueCapacity>16</parquet:QueueCapacity>
+                <parquet:FlushInterval>PT0.05S</parquet:FlushInterval>
+              </Combinator>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="arrow:ArrowWriter">
+                <arrow:FileName>../../../artifacts/api-tests/records.arrow</arrow:FileName>
+                <arrow:Suffix>None</arrow:Suffix>
+                <arrow:Overwrite>true</arrow:Overwrite>
+                <arrow:BatchSize>5</arrow:BatchSize>
+                <arrow:Buffered>true</arrow:Buffered>
+                <arrow:QueueCapacity>16</arrow:QueueCapacity>
+                <arrow:FlushInterval>PT0.05S</arrow:FlushInterval>
+              </Combinator>
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Name>Only completion triggers the read stage</scr:Name>
+              <scr:Expression>true</scr:Expression>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:IgnoreElements" />
+            </Expression>
+            <Expression xsi:type="parquet:ParquetReader">
+              <parquet:FileName>../../../artifacts/api-tests/records.parquet</parquet:FileName>
+              <parquet:BatchSize>4</parquet:BatchSize>
+              <parquet:Columns>
+                <parquet:ColumnDefinition>
+                  <parquet:Name>Index</parquet:Name>
+                  <parquet:Type>Int32</parquet:Type>
+                </parquet:ColumnDefinition>
+                <parquet:ColumnDefinition>
+                  <parquet:Name>Value</parquet:Name>
+                </parquet:ColumnDefinition>
+                <parquet:ColumnDefinition>
+                  <parquet:Name>Label</parquet:Name>
+                  <parquet:Type>String</parquet:Type>
+                </parquet:ColumnDefinition>
+              </parquet:Columns>
+            </Expression>
+            <Expression xsi:type="arrow:ArrowReader">
+              <arrow:FileName>../../../artifacts/api-tests/records.arrow</arrow:FileName>
+              <arrow:Columns>
+                <arrow:ColumnDefinition>
+                  <arrow:Name>Index</arrow:Name>
+                  <arrow:Type>Int32</arrow:Type>
+                </arrow:ColumnDefinition>
+                <arrow:ColumnDefinition>
+                  <arrow:Name>Value</arrow:Name>
+                </arrow:ColumnDefinition>
+                <arrow:ColumnDefinition>
+                  <arrow:Name>Label</arrow:Name>
+                  <arrow:Type>String</arrow:Type>
+                </arrow:ColumnDefinition>
+              </arrow:Columns>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Zip" />
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Name>Compare Parquet and Arrow rows</scr:Name>
+              <scr:Expression>Item1.Item1 == Item2.Item1 &amp;&amp; Item1.Item2 == Item2.Item2 &amp;&amp; Item1.Item3 == Item2.Item3 &amp;&amp; Item1.Item2 == Item1.Item1 * 0.25 &amp;&amp; Item1.Item3 == "sample-" + Item1.Item1</scr:Expression>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:ToArray" />
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Name>Case result</scr:Name>
+              <scr:Expression>it.Length == 12 &amp;&amp; it.All(it)</scr:Expression>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Concat" />
+            </Expression>
+            <Expression xsi:type="WorkflowOutput" />
+          </Nodes>
+          <Edges>
+            <Edge From="0" To="1" Label="Source1" />
+            <Edge From="1" To="2" Label="Source1" />
+            <Edge From="2" To="3" Label="Source1" />
+            <Edge From="3" To="4" Label="Source1" />
+            <Edge From="4" To="5" Label="Source1" />
+            <Edge From="5" To="12" Label="Source1" />
+            <Edge From="6" To="8" Label="Source1" />
+            <Edge From="7" To="8" Label="Source2" />
+            <Edge From="8" To="9" Label="Source1" />
+            <Edge From="9" To="10" Label="Source1" />
+            <Edge From="10" To="11" Label="Source1" />
+            <Edge From="11" To="12" Label="Source2" />
+            <Edge From="12" To="13" Label="Source1" />
+          </Edges>
+        </Workflow>
+      </Expression>
+      <Expression xsi:type="GroupWorkflow">
+        <Name>03 Nested member selectors</Name>
+        <Description>Write 12 rows through ParquetWriter and ArrowWriter, then compare both typed readers. Output files: artifacts/api-tests/selectors.*; overwrite is enabled. Open Columns on either reader to test its schema editor.</Description>
+        <Workflow>
+          <Nodes>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Range">
+                <rx:Start>0</rx:Start>
+                <rx:Count>12</rx:Count>
+              </Combinator>
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Name>Create sample values</scr:Name>
+              <scr:Expression>new(it as Index, new((it + 100) as Value) as Inner, (it * 99) as Ignored)</scr:Expression>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="parquet:ParquetWriter">
+                <parquet:FileName>../../../artifacts/api-tests/selectors.parquet</parquet:FileName>
+                <parquet:Suffix>None</parquet:Suffix>
+                <parquet:Overwrite>true</parquet:Overwrite>
+                <parquet:Selector>Index,Inner.Value</parquet:Selector>
+                <parquet:CompressionMethod>Uncompressed</parquet:CompressionMethod>
+                <parquet:BatchSize>5</parquet:BatchSize>
+                <parquet:Buffered>true</parquet:Buffered>
+                <parquet:QueueCapacity>16</parquet:QueueCapacity>
+                <parquet:FlushInterval>PT0.05S</parquet:FlushInterval>
+              </Combinator>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="arrow:ArrowWriter">
+                <arrow:FileName>../../../artifacts/api-tests/selectors.arrow</arrow:FileName>
+                <arrow:Suffix>None</arrow:Suffix>
+                <arrow:Overwrite>true</arrow:Overwrite>
+                <arrow:Selector>Index,Inner.Value</arrow:Selector>
+                <arrow:BatchSize>5</arrow:BatchSize>
+                <arrow:Buffered>true</arrow:Buffered>
+                <arrow:QueueCapacity>16</arrow:QueueCapacity>
+                <arrow:FlushInterval>PT0.05S</arrow:FlushInterval>
+              </Combinator>
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Name>Only completion triggers the read stage</scr:Name>
+              <scr:Expression>true</scr:Expression>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:IgnoreElements" />
+            </Expression>
+            <Expression xsi:type="parquet:ParquetReader">
+              <parquet:FileName>../../../artifacts/api-tests/selectors.parquet</parquet:FileName>
+              <parquet:BatchSize>4</parquet:BatchSize>
+              <parquet:Columns>
+                <parquet:ColumnDefinition>
+                  <parquet:Name>Index</parquet:Name>
+                  <parquet:Type>Int32</parquet:Type>
+                </parquet:ColumnDefinition>
+                <parquet:ColumnDefinition>
+                  <parquet:Name>Inner.Value</parquet:Name>
+                  <parquet:Type>Int32</parquet:Type>
+                </parquet:ColumnDefinition>
+              </parquet:Columns>
+            </Expression>
+            <Expression xsi:type="arrow:ArrowReader">
+              <arrow:FileName>../../../artifacts/api-tests/selectors.arrow</arrow:FileName>
+              <arrow:Columns>
+                <arrow:ColumnDefinition>
+                  <arrow:Name>Index</arrow:Name>
+                  <arrow:Type>Int32</arrow:Type>
+                </arrow:ColumnDefinition>
+                <arrow:ColumnDefinition>
+                  <arrow:Name>Inner.Value</arrow:Name>
+                  <arrow:Type>Int32</arrow:Type>
+                </arrow:ColumnDefinition>
+              </arrow:Columns>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Zip" />
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Name>Compare Parquet and Arrow rows</scr:Name>
+              <scr:Expression>Item1.Item1 == Item2.Item1 &amp;&amp; Item1.Item2 == Item2.Item2 &amp;&amp; Item1.Item2 == Item1.Item1 + 100</scr:Expression>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:ToArray" />
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Name>Case result</scr:Name>
+              <scr:Expression>it.Length == 12 &amp;&amp; it.All(it)</scr:Expression>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Concat" />
+            </Expression>
+            <Expression xsi:type="WorkflowOutput" />
+          </Nodes>
+          <Edges>
+            <Edge From="0" To="1" Label="Source1" />
+            <Edge From="1" To="2" Label="Source1" />
+            <Edge From="2" To="3" Label="Source1" />
+            <Edge From="3" To="4" Label="Source1" />
+            <Edge From="4" To="5" Label="Source1" />
+            <Edge From="5" To="12" Label="Source1" />
+            <Edge From="6" To="8" Label="Source1" />
+            <Edge From="7" To="8" Label="Source2" />
+            <Edge From="8" To="9" Label="Source1" />
+            <Edge From="9" To="10" Label="Source1" />
+            <Edge From="10" To="11" Label="Source1" />
+            <Edge From="11" To="12" Label="Source2" />
+            <Edge From="12" To="13" Label="Source1" />
+          </Edges>
+        </Workflow>
+      </Expression>
+      <Expression xsi:type="GroupWorkflow">
+        <Name>04 Nullable integers</Name>
+        <Description>Write 12 rows through ParquetWriter and ArrowWriter, then compare both typed readers. Output files: artifacts/api-tests/nullable.*; overwrite is enabled. Open Columns on either reader to test its schema editor.</Description>
+        <Workflow>
+          <Nodes>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Range">
+                <rx:Start>0</rx:Start>
+                <rx:Count>12</rx:Count>
+              </Combinator>
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Name>Create sample values</scr:Name>
+              <scr:Expression>it % 3 == 0 ? Int32?(null) : Int32?(it)</scr:Expression>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="parquet:ParquetWriter">
+                <parquet:FileName>../../../artifacts/api-tests/nullable.parquet</parquet:FileName>
+                <parquet:Suffix>None</parquet:Suffix>
+                <parquet:Overwrite>true</parquet:Overwrite>
+                <parquet:CompressionMethod>Uncompressed</parquet:CompressionMethod>
+                <parquet:BatchSize>5</parquet:BatchSize>
+                <parquet:Buffered>true</parquet:Buffered>
+                <parquet:QueueCapacity>16</parquet:QueueCapacity>
+                <parquet:FlushInterval>PT0.05S</parquet:FlushInterval>
+              </Combinator>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="arrow:ArrowWriter">
+                <arrow:FileName>../../../artifacts/api-tests/nullable.arrow</arrow:FileName>
+                <arrow:Suffix>None</arrow:Suffix>
+                <arrow:Overwrite>true</arrow:Overwrite>
+                <arrow:BatchSize>5</arrow:BatchSize>
+                <arrow:Buffered>true</arrow:Buffered>
+                <arrow:QueueCapacity>16</arrow:QueueCapacity>
+                <arrow:FlushInterval>PT0.05S</arrow:FlushInterval>
+              </Combinator>
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Name>Only completion triggers the read stage</scr:Name>
+              <scr:Expression>true</scr:Expression>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:IgnoreElements" />
+            </Expression>
+            <Expression xsi:type="parquet:ParquetReader">
+              <parquet:FileName>../../../artifacts/api-tests/nullable.parquet</parquet:FileName>
+              <parquet:BatchSize>4</parquet:BatchSize>
+              <parquet:Columns>
+                <parquet:ColumnDefinition>
+                  <parquet:Name>Value</parquet:Name>
+                  <parquet:Type>Int32</parquet:Type>
+                  <parquet:IsNullable>true</parquet:IsNullable>
+                </parquet:ColumnDefinition>
+              </parquet:Columns>
+            </Expression>
+            <Expression xsi:type="arrow:ArrowReader">
+              <arrow:FileName>../../../artifacts/api-tests/nullable.arrow</arrow:FileName>
+              <arrow:Columns>
+                <arrow:ColumnDefinition>
+                  <arrow:Name>Value</arrow:Name>
+                  <arrow:Type>Int32</arrow:Type>
+                  <arrow:IsNullable>true</arrow:IsNullable>
+                </arrow:ColumnDefinition>
+              </arrow:Columns>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Zip" />
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Name>Compare Parquet and Arrow rows</scr:Name>
+              <scr:Expression>Item1 == Item2 &amp;&amp; (!Item1.HasValue || Item1.Value % 3 != 0)</scr:Expression>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:ToArray" />
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Name>Case result</scr:Name>
+              <scr:Expression>it.Length == 12 &amp;&amp; it.All(it)</scr:Expression>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Concat" />
+            </Expression>
+            <Expression xsi:type="WorkflowOutput" />
+          </Nodes>
+          <Edges>
+            <Edge From="0" To="1" Label="Source1" />
+            <Edge From="1" To="2" Label="Source1" />
+            <Edge From="2" To="3" Label="Source1" />
+            <Edge From="3" To="4" Label="Source1" />
+            <Edge From="4" To="5" Label="Source1" />
+            <Edge From="5" To="12" Label="Source1" />
+            <Edge From="6" To="8" Label="Source1" />
+            <Edge From="7" To="8" Label="Source2" />
+            <Edge From="8" To="9" Label="Source1" />
+            <Edge From="9" To="10" Label="Source1" />
+            <Edge From="10" To="11" Label="Source1" />
+            <Edge From="11" To="12" Label="Source2" />
+            <Edge From="12" To="13" Label="Source1" />
+          </Edges>
+        </Workflow>
+      </Expression>
+      <Expression xsi:type="GroupWorkflow">
+        <Name>05 Variable length arrays</Name>
+        <Description>Write 12 rows through ParquetWriter and ArrowWriter, then compare both typed readers. Output files: artifacts/api-tests/arrays.*; overwrite is enabled. Open Columns on either reader to test its schema editor.</Description>
+        <Workflow>
+          <Nodes>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Range">
+                <rx:Start>0</rx:Start>
+                <rx:Count>12</rx:Count>
+              </Combinator>
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Name>Create sample values</scr:Name>
+              <scr:Expression>it % 3 == 0 ? new Int32[] {} : (it % 3 == 1 ? new[] { it } : new[] { it, it + 1, it + 2 })</scr:Expression>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="parquet:ParquetWriter">
+                <parquet:FileName>../../../artifacts/api-tests/arrays.parquet</parquet:FileName>
+                <parquet:Suffix>None</parquet:Suffix>
+                <parquet:Overwrite>true</parquet:Overwrite>
+                <parquet:CompressionMethod>Uncompressed</parquet:CompressionMethod>
+                <parquet:BatchSize>5</parquet:BatchSize>
+                <parquet:Buffered>true</parquet:Buffered>
+                <parquet:QueueCapacity>16</parquet:QueueCapacity>
+                <parquet:FlushInterval>PT0.05S</parquet:FlushInterval>
+              </Combinator>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="arrow:ArrowWriter">
+                <arrow:FileName>../../../artifacts/api-tests/arrays.arrow</arrow:FileName>
+                <arrow:Suffix>None</arrow:Suffix>
+                <arrow:Overwrite>true</arrow:Overwrite>
+                <arrow:BatchSize>5</arrow:BatchSize>
+                <arrow:Buffered>true</arrow:Buffered>
+                <arrow:QueueCapacity>16</arrow:QueueCapacity>
+                <arrow:FlushInterval>PT0.05S</arrow:FlushInterval>
+              </Combinator>
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Name>Only completion triggers the read stage</scr:Name>
+              <scr:Expression>true</scr:Expression>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:IgnoreElements" />
+            </Expression>
+            <Expression xsi:type="parquet:ParquetReader">
+              <parquet:FileName>../../../artifacts/api-tests/arrays.parquet</parquet:FileName>
+              <parquet:BatchSize>4</parquet:BatchSize>
+              <parquet:Columns>
+                <parquet:ColumnDefinition>
+                  <parquet:Name>Value</parquet:Name>
+                  <parquet:Type>Int32</parquet:Type>
+                  <parquet:IsArray>true</parquet:IsArray>
+                </parquet:ColumnDefinition>
+              </parquet:Columns>
+            </Expression>
+            <Expression xsi:type="arrow:ArrowReader">
+              <arrow:FileName>../../../artifacts/api-tests/arrays.arrow</arrow:FileName>
+              <arrow:Columns>
+                <arrow:ColumnDefinition>
+                  <arrow:Name>Value</arrow:Name>
+                  <arrow:Type>Int32</arrow:Type>
+                  <arrow:IsArray>true</arrow:IsArray>
+                </arrow:ColumnDefinition>
+              </arrow:Columns>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Zip" />
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Name>Compare Parquet and Arrow rows</scr:Name>
+              <scr:Expression>Item1.Length == Item2.Length &amp;&amp; (Item1.Length == 0 || (Item1[0] == Item2[0] &amp;&amp; (Item1.Length == 1 || (Item1.Length == 3 &amp;&amp; Item1[1] == Item2[1] &amp;&amp; Item1[2] == Item2[2] &amp;&amp; Item1[1] == Item1[0] + 1 &amp;&amp; Item1[2] == Item1[0] + 2))))</scr:Expression>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:ToArray" />
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Name>Case result</scr:Name>
+              <scr:Expression>it.Length == 12 &amp;&amp; it.All(it)</scr:Expression>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Concat" />
+            </Expression>
+            <Expression xsi:type="WorkflowOutput" />
+          </Nodes>
+          <Edges>
+            <Edge From="0" To="1" Label="Source1" />
+            <Edge From="1" To="2" Label="Source1" />
+            <Edge From="2" To="3" Label="Source1" />
+            <Edge From="3" To="4" Label="Source1" />
+            <Edge From="4" To="5" Label="Source1" />
+            <Edge From="5" To="12" Label="Source1" />
+            <Edge From="6" To="8" Label="Source1" />
+            <Edge From="7" To="8" Label="Source2" />
+            <Edge From="8" To="9" Label="Source1" />
+            <Edge From="9" To="10" Label="Source1" />
+            <Edge From="10" To="11" Label="Source1" />
+            <Edge From="11" To="12" Label="Source2" />
+            <Edge From="12" To="13" Label="Source1" />
+          </Edges>
+        </Workflow>
+      </Expression>
+      <Expression xsi:type="GroupWorkflow">
+        <Name>06 Binary byte arrays</Name>
+        <Description>Write 12 rows through ParquetWriter and ArrowWriter, then compare both typed readers. Output files: artifacts/api-tests/binary.*; overwrite is enabled. Open Columns on either reader to test its schema editor.</Description>
+        <Workflow>
+          <Nodes>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Range">
+                <rx:Start>0</rx:Start>
+                <rx:Count>12</rx:Count>
+              </Combinator>
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Name>Create sample values</scr:Name>
+              <scr:Expression>new Byte[] { Byte(it), Byte(it + 1), Byte(255) }</scr:Expression>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="parquet:ParquetWriter">
+                <parquet:FileName>../../../artifacts/api-tests/binary.parquet</parquet:FileName>
+                <parquet:Suffix>None</parquet:Suffix>
+                <parquet:Overwrite>true</parquet:Overwrite>
+                <parquet:CompressionMethod>Uncompressed</parquet:CompressionMethod>
+                <parquet:BatchSize>5</parquet:BatchSize>
+                <parquet:Buffered>true</parquet:Buffered>
+                <parquet:QueueCapacity>16</parquet:QueueCapacity>
+                <parquet:FlushInterval>PT0.05S</parquet:FlushInterval>
+              </Combinator>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="arrow:ArrowWriter">
+                <arrow:FileName>../../../artifacts/api-tests/binary.arrow</arrow:FileName>
+                <arrow:Suffix>None</arrow:Suffix>
+                <arrow:Overwrite>true</arrow:Overwrite>
+                <arrow:BatchSize>5</arrow:BatchSize>
+                <arrow:Buffered>true</arrow:Buffered>
+                <arrow:QueueCapacity>16</arrow:QueueCapacity>
+                <arrow:FlushInterval>PT0.05S</arrow:FlushInterval>
+              </Combinator>
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Name>Only completion triggers the read stage</scr:Name>
+              <scr:Expression>true</scr:Expression>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:IgnoreElements" />
+            </Expression>
+            <Expression xsi:type="parquet:ParquetReader">
+              <parquet:FileName>../../../artifacts/api-tests/binary.parquet</parquet:FileName>
+              <parquet:BatchSize>4</parquet:BatchSize>
+              <parquet:Columns>
+                <parquet:ColumnDefinition>
+                  <parquet:Name>Value</parquet:Name>
+                  <parquet:Type>Bytes</parquet:Type>
+                </parquet:ColumnDefinition>
+              </parquet:Columns>
+            </Expression>
+            <Expression xsi:type="arrow:ArrowReader">
+              <arrow:FileName>../../../artifacts/api-tests/binary.arrow</arrow:FileName>
+              <arrow:Columns>
+                <arrow:ColumnDefinition>
+                  <arrow:Name>Value</arrow:Name>
+                  <arrow:Type>Bytes</arrow:Type>
+                </arrow:ColumnDefinition>
+              </arrow:Columns>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Zip" />
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Name>Compare Parquet and Arrow rows</scr:Name>
+              <scr:Expression>Item1.Length == 3 &amp;&amp; Item2.Length == 3 &amp;&amp; Item1[0] == Item2[0] &amp;&amp; Item1[1] == Item2[1] &amp;&amp; Item1[2] == 255 &amp;&amp; Item2[2] == 255</scr:Expression>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:ToArray" />
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Name>Case result</scr:Name>
+              <scr:Expression>it.Length == 12 &amp;&amp; it.All(it)</scr:Expression>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Concat" />
+            </Expression>
+            <Expression xsi:type="WorkflowOutput" />
+          </Nodes>
+          <Edges>
+            <Edge From="0" To="1" Label="Source1" />
+            <Edge From="1" To="2" Label="Source1" />
+            <Edge From="2" To="3" Label="Source1" />
+            <Edge From="3" To="4" Label="Source1" />
+            <Edge From="4" To="5" Label="Source1" />
+            <Edge From="5" To="12" Label="Source1" />
+            <Edge From="6" To="8" Label="Source1" />
+            <Edge From="7" To="8" Label="Source2" />
+            <Edge From="8" To="9" Label="Source1" />
+            <Edge From="9" To="10" Label="Source1" />
+            <Edge From="10" To="11" Label="Source1" />
+            <Edge From="11" To="12" Label="Source2" />
+            <Edge From="12" To="13" Label="Source1" />
+          </Edges>
+        </Workflow>
+      </Expression>
+      <Expression xsi:type="GroupWorkflow">
+        <Name>07 DateTime timestamps</Name>
+        <Description>Write 12 rows through ParquetWriter and ArrowWriter, then compare both typed readers. Output files: artifacts/api-tests/timestamps.*; overwrite is enabled. Open Columns on either reader to test its schema editor.</Description>
+        <Workflow>
+          <Nodes>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Range">
+                <rx:Start>0</rx:Start>
+                <rx:Count>12</rx:Count>
+              </Combinator>
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Name>Create sample values</scr:Name>
+              <scr:Expression>DateTime(2020, 1, 1).AddSeconds(it)</scr:Expression>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="parquet:ParquetWriter">
+                <parquet:FileName>../../../artifacts/api-tests/timestamps.parquet</parquet:FileName>
+                <parquet:Suffix>None</parquet:Suffix>
+                <parquet:Overwrite>true</parquet:Overwrite>
+                <parquet:CompressionMethod>Uncompressed</parquet:CompressionMethod>
+                <parquet:BatchSize>5</parquet:BatchSize>
+                <parquet:Buffered>true</parquet:Buffered>
+                <parquet:QueueCapacity>16</parquet:QueueCapacity>
+                <parquet:FlushInterval>PT0.05S</parquet:FlushInterval>
+              </Combinator>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="arrow:ArrowWriter">
+                <arrow:FileName>../../../artifacts/api-tests/timestamps.arrow</arrow:FileName>
+                <arrow:Suffix>None</arrow:Suffix>
+                <arrow:Overwrite>true</arrow:Overwrite>
+                <arrow:BatchSize>5</arrow:BatchSize>
+                <arrow:Buffered>true</arrow:Buffered>
+                <arrow:QueueCapacity>16</arrow:QueueCapacity>
+                <arrow:FlushInterval>PT0.05S</arrow:FlushInterval>
+              </Combinator>
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Name>Only completion triggers the read stage</scr:Name>
+              <scr:Expression>true</scr:Expression>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:IgnoreElements" />
+            </Expression>
+            <Expression xsi:type="parquet:ParquetReader">
+              <parquet:FileName>../../../artifacts/api-tests/timestamps.parquet</parquet:FileName>
+              <parquet:BatchSize>4</parquet:BatchSize>
+              <parquet:Columns>
+                <parquet:ColumnDefinition>
+                  <parquet:Name>Value</parquet:Name>
+                  <parquet:Type>DateTime</parquet:Type>
+                </parquet:ColumnDefinition>
+              </parquet:Columns>
+            </Expression>
+            <Expression xsi:type="arrow:ArrowReader">
+              <arrow:FileName>../../../artifacts/api-tests/timestamps.arrow</arrow:FileName>
+              <arrow:Columns>
+                <arrow:ColumnDefinition>
+                  <arrow:Name>Value</arrow:Name>
+                  <arrow:Type>DateTime</arrow:Type>
+                </arrow:ColumnDefinition>
+              </arrow:Columns>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Zip" />
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Name>Compare Parquet and Arrow rows</scr:Name>
+              <scr:Expression>Item1 == Item2 &amp;&amp; Item1.Year == 2020</scr:Expression>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:ToArray" />
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Name>Case result</scr:Name>
+              <scr:Expression>it.Length == 12 &amp;&amp; it.All(it)</scr:Expression>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Concat" />
+            </Expression>
+            <Expression xsi:type="WorkflowOutput" />
+          </Nodes>
+          <Edges>
+            <Edge From="0" To="1" Label="Source1" />
+            <Edge From="1" To="2" Label="Source1" />
+            <Edge From="2" To="3" Label="Source1" />
+            <Edge From="3" To="4" Label="Source1" />
+            <Edge From="4" To="5" Label="Source1" />
+            <Edge From="5" To="12" Label="Source1" />
+            <Edge From="6" To="8" Label="Source1" />
+            <Edge From="7" To="8" Label="Source2" />
+            <Edge From="8" To="9" Label="Source1" />
+            <Edge From="9" To="10" Label="Source1" />
+            <Edge From="10" To="11" Label="Source1" />
+            <Edge From="11" To="12" Label="Source2" />
+            <Edge From="12" To="13" Label="Source1" />
+          </Edges>
+        </Workflow>
+      </Expression>
+      <Expression xsi:type="GroupWorkflow">
+        <Name>08 Compressed mixed types</Name>
+        <Description>Write 12 rows through ParquetWriter and ArrowWriter, then compare both typed readers. Output files: artifacts/api-tests/compressed.*; overwrite is enabled. Open Columns on either reader to test its schema editor.</Description>
+        <Workflow>
+          <Nodes>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Range">
+                <rx:Start>0</rx:Start>
+                <rx:Count>12</rx:Count>
+              </Combinator>
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Name>Create sample values</scr:Name>
+              <scr:Expression>new(UInt64(it) as Clock, Single(it * 0.5) as Signal, Decimal(it * 0.25) as Amount, (it % 2 == 0) as Flag)</scr:Expression>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="parquet:ParquetWriter">
+                <parquet:FileName>../../../artifacts/api-tests/compressed.parquet</parquet:FileName>
+                <parquet:Suffix>None</parquet:Suffix>
+                <parquet:Overwrite>true</parquet:Overwrite>
+                <parquet:CompressionMethod>Zstd</parquet:CompressionMethod>
+                <parquet:BatchSize>5</parquet:BatchSize>
+                <parquet:Buffered>true</parquet:Buffered>
+                <parquet:QueueCapacity>16</parquet:QueueCapacity>
+                <parquet:FlushInterval>PT0.05S</parquet:FlushInterval>
+              </Combinator>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="arrow:ArrowWriter">
+                <arrow:FileName>../../../artifacts/api-tests/compressed.arrow</arrow:FileName>
+                <arrow:Suffix>None</arrow:Suffix>
+                <arrow:Overwrite>true</arrow:Overwrite>
+                <arrow:BatchSize>5</arrow:BatchSize>
+                <arrow:EnableCompression>true</arrow:EnableCompression>
+                <arrow:Buffered>true</arrow:Buffered>
+                <arrow:QueueCapacity>16</arrow:QueueCapacity>
+                <arrow:FlushInterval>PT0.05S</arrow:FlushInterval>
+              </Combinator>
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Name>Only completion triggers the read stage</scr:Name>
+              <scr:Expression>true</scr:Expression>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:IgnoreElements" />
+            </Expression>
+            <Expression xsi:type="parquet:ParquetReader">
+              <parquet:FileName>../../../artifacts/api-tests/compressed.parquet</parquet:FileName>
+              <parquet:BatchSize>4</parquet:BatchSize>
+              <parquet:Columns>
+                <parquet:ColumnDefinition>
+                  <parquet:Name>Clock</parquet:Name>
+                  <parquet:Type>UInt64</parquet:Type>
+                </parquet:ColumnDefinition>
+                <parquet:ColumnDefinition>
+                  <parquet:Name>Signal</parquet:Name>
+                  <parquet:Type>Float</parquet:Type>
+                </parquet:ColumnDefinition>
+                <parquet:ColumnDefinition>
+                  <parquet:Name>Amount</parquet:Name>
+                  <parquet:Type>Decimal</parquet:Type>
+                </parquet:ColumnDefinition>
+                <parquet:ColumnDefinition>
+                  <parquet:Name>Flag</parquet:Name>
+                  <parquet:Type>Bool</parquet:Type>
+                </parquet:ColumnDefinition>
+              </parquet:Columns>
+            </Expression>
+            <Expression xsi:type="arrow:ArrowReader">
+              <arrow:FileName>../../../artifacts/api-tests/compressed.arrow</arrow:FileName>
+              <arrow:Columns>
+                <arrow:ColumnDefinition>
+                  <arrow:Name>Clock</arrow:Name>
+                  <arrow:Type>UInt64</arrow:Type>
+                </arrow:ColumnDefinition>
+                <arrow:ColumnDefinition>
+                  <arrow:Name>Signal</arrow:Name>
+                  <arrow:Type>Float</arrow:Type>
+                </arrow:ColumnDefinition>
+                <arrow:ColumnDefinition>
+                  <arrow:Name>Amount</arrow:Name>
+                  <arrow:Type>Decimal</arrow:Type>
+                </arrow:ColumnDefinition>
+                <arrow:ColumnDefinition>
+                  <arrow:Name>Flag</arrow:Name>
+                  <arrow:Type>Bool</arrow:Type>
+                </arrow:ColumnDefinition>
+              </arrow:Columns>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Zip" />
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Name>Compare Parquet and Arrow rows</scr:Name>
+              <scr:Expression>Item1.Item1 == Item2.Item1 &amp;&amp; Item1.Item2 == Item2.Item2 &amp;&amp; Item1.Item3 == Item2.Item3 &amp;&amp; Item1.Item4 == Item2.Item4</scr:Expression>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:ToArray" />
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Name>Case result</scr:Name>
+              <scr:Expression>it.Length == 12 &amp;&amp; it.All(it)</scr:Expression>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Concat" />
+            </Expression>
+            <Expression xsi:type="WorkflowOutput" />
+          </Nodes>
+          <Edges>
+            <Edge From="0" To="1" Label="Source1" />
+            <Edge From="1" To="2" Label="Source1" />
+            <Edge From="2" To="3" Label="Source1" />
+            <Edge From="3" To="4" Label="Source1" />
+            <Edge From="4" To="5" Label="Source1" />
+            <Edge From="5" To="12" Label="Source1" />
+            <Edge From="6" To="8" Label="Source1" />
+            <Edge From="7" To="8" Label="Source2" />
+            <Edge From="8" To="9" Label="Source1" />
+            <Edge From="9" To="10" Label="Source1" />
+            <Edge From="10" To="11" Label="Source1" />
+            <Edge From="11" To="12" Label="Source2" />
+            <Edge From="12" To="13" Label="Source1" />
+          </Edges>
+        </Workflow>
+      </Expression>
+      <Expression xsi:type="GroupWorkflow">
+        <Name>09 Empty files</Name>
+        <Description>Write 0 rows through ParquetWriter and ArrowWriter, then compare both typed readers. Output files: artifacts/api-tests/empty.*; overwrite is enabled. Open Columns on either reader to test its schema editor.</Description>
+        <Workflow>
+          <Nodes>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Range">
+                <rx:Start>0</rx:Start>
+                <rx:Count>0</rx:Count>
+              </Combinator>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="parquet:ParquetWriter">
+                <parquet:FileName>../../../artifacts/api-tests/empty.parquet</parquet:FileName>
+                <parquet:Suffix>None</parquet:Suffix>
+                <parquet:Overwrite>true</parquet:Overwrite>
+                <parquet:CompressionMethod>Uncompressed</parquet:CompressionMethod>
+                <parquet:BatchSize>5</parquet:BatchSize>
+                <parquet:Buffered>true</parquet:Buffered>
+                <parquet:QueueCapacity>16</parquet:QueueCapacity>
+                <parquet:FlushInterval>PT0.05S</parquet:FlushInterval>
+              </Combinator>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="arrow:ArrowWriter">
+                <arrow:FileName>../../../artifacts/api-tests/empty.arrow</arrow:FileName>
+                <arrow:Suffix>None</arrow:Suffix>
+                <arrow:Overwrite>true</arrow:Overwrite>
+                <arrow:BatchSize>5</arrow:BatchSize>
+                <arrow:Buffered>true</arrow:Buffered>
+                <arrow:QueueCapacity>16</arrow:QueueCapacity>
+                <arrow:FlushInterval>PT0.05S</arrow:FlushInterval>
+              </Combinator>
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Name>Only completion triggers the read stage</scr:Name>
+              <scr:Expression>true</scr:Expression>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:IgnoreElements" />
+            </Expression>
+            <Expression xsi:type="parquet:ParquetReader">
+              <parquet:FileName>../../../artifacts/api-tests/empty.parquet</parquet:FileName>
+              <parquet:BatchSize>4</parquet:BatchSize>
+              <parquet:Columns>
+                <parquet:ColumnDefinition>
+                  <parquet:Name>Value</parquet:Name>
+                  <parquet:Type>Int32</parquet:Type>
+                </parquet:ColumnDefinition>
+              </parquet:Columns>
+            </Expression>
+            <Expression xsi:type="arrow:ArrowReader">
+              <arrow:FileName>../../../artifacts/api-tests/empty.arrow</arrow:FileName>
+              <arrow:Columns>
+                <arrow:ColumnDefinition>
+                  <arrow:Name>Value</arrow:Name>
+                  <arrow:Type>Int32</arrow:Type>
+                </arrow:ColumnDefinition>
+              </arrow:Columns>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Zip" />
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Name>Compare Parquet and Arrow rows</scr:Name>
+              <scr:Expression>Item1 == Item2</scr:Expression>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:ToArray" />
+            </Expression>
+            <Expression xsi:type="scr:ExpressionTransform">
+              <scr:Name>Case result</scr:Name>
+              <scr:Expression>it.Length == 0 &amp;&amp; it.All(it)</scr:Expression>
+            </Expression>
+            <Expression xsi:type="Combinator">
+              <Combinator xsi:type="rx:Concat" />
+            </Expression>
+            <Expression xsi:type="WorkflowOutput" />
+          </Nodes>
+          <Edges>
+            <Edge From="0" To="1" Label="Source1" />
+            <Edge From="1" To="2" Label="Source1" />
+            <Edge From="2" To="3" Label="Source1" />
+            <Edge From="3" To="4" Label="Source1" />
+            <Edge From="4" To="11" Label="Source1" />
+            <Edge From="5" To="7" Label="Source1" />
+            <Edge From="6" To="7" Label="Source2" />
+            <Edge From="7" To="8" Label="Source1" />
+            <Edge From="8" To="9" Label="Source1" />
+            <Edge From="9" To="10" Label="Source1" />
+            <Edge From="10" To="11" Label="Source2" />
+            <Edge From="11" To="12" Label="Source1" />
+          </Edges>
+        </Workflow>
+      </Expression>
+      <Expression xsi:type="Combinator">
+        <Combinator xsi:type="rx:Merge" />
+      </Expression>
+      <Expression xsi:type="Combinator">
+        <Combinator xsi:type="rx:ToArray" />
+      </Expression>
+      <Expression xsi:type="scr:ExpressionTransform">
+        <scr:Name>Summary</scr:Name>
+        <scr:Expression>it.Length == 9 &amp;&amp; it.All(it)</scr:Expression>
+      </Expression>
+      <Expression xsi:type="Combinator">
+        <Combinator xsi:type="io:WriteLine" />
+      </Expression>
+      <Expression xsi:type="WorkflowOutput" />
+    </Nodes>
+    <Edges>
+      <Edge From="0" To="9" Label="Source1" />
+      <Edge From="1" To="9" Label="Source2" />
+      <Edge From="2" To="9" Label="Source3" />
+      <Edge From="3" To="9" Label="Source4" />
+      <Edge From="4" To="9" Label="Source5" />
+      <Edge From="5" To="9" Label="Source6" />
+      <Edge From="6" To="9" Label="Source7" />
+      <Edge From="7" To="9" Label="Source8" />
+      <Edge From="8" To="9" Label="Source9" />
+      <Edge From="9" To="10" Label="Source1" />
+      <Edge From="10" To="11" Label="Source1" />
+      <Edge From="11" To="12" Label="Source1" />
+      <Edge From="12" To="13" Label="Source1" />
+    </Edges>
+  </Workflow>
+</WorkflowBuilder>

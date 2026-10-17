@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <UseWindowsForms>true</UseWindowsForms>
+    <IsPackable>false</IsPackable>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Bonsai.Apache.Arrow.Design\Bonsai.Apache.Arrow.Design.csproj" />
+    <ProjectReference Include="..\Bonsai.Apache.Parquet.Design\Bonsai.Apache.Parquet.Design.csproj" />
+  </ItemGroup>
+</Project>

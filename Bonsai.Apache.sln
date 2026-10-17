@@ -1,0 +1,100 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.3.32825.248
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bonsai.Apache.Parquet", "src\Bonsai.Apache.Parquet\Bonsai.Apache.Parquet.csproj", "{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bonsai.Apache.Parquet.Design", "src\Bonsai.Apache.Parquet.Design\Bonsai.Apache.Parquet.Design.csproj", "{C4D5E6F7-A8B9-0123-CDEF-234567890123}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bonsai.Apache.Parquet.Tests", "src\Bonsai.Apache.Parquet.Tests\Bonsai.Apache.Parquet.Tests.csproj", "{B2C3D4E5-F6A7-8901-BCDE-F12345678901}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "build", "build", "{C3D4E5F6-A7B8-9012-CDEF-123456789012}"
+	ProjectSection(SolutionItems) = preProject
+		build\Common.csproj.props = build\Common.csproj.props
+		build\Common.csproj.targets = build\Common.csproj.targets
+		build\Common.Tests.csproj.props = build\Common.Tests.csproj.props
+		build\icon.png = build\icon.png
+		build\Package.props = build\Package.props
+		build\Project.csproj.props = build\Project.csproj.props
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{FF108BC1-87AB-4945-8376-EDBA4AD046E8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bonsai.Apache.Arrow", "src\Bonsai.Apache.Arrow\Bonsai.Apache.Arrow.csproj", "{E0BE03F4-D0F5-44AC-BDBB-C99747BA47BA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bonsai.Apache.Arrow.Design", "src\Bonsai.Apache.Arrow.Design\Bonsai.Apache.Arrow.Design.csproj", "{5DD15C3C-F1A3-4C2D-8B5A-1D94819F1B6D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bonsai.Apache.Arrow.Tests", "src\Bonsai.Apache.Arrow.Tests\Bonsai.Apache.Arrow.Tests.csproj", "{8DC04B45-D8C5-43C1-A6C8-3FC1C64A3028}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Shared runtime", "Shared runtime", "{0F692ADA-C2A5-4310-AE74-6CA21A2C19C7}"
+	ProjectSection(SolutionItems) = preProject
+		src\Shared\Runtime\ColumnTypes.cs = src\Shared\Runtime\ColumnTypes.cs
+		src\Shared\Runtime\MemberSchema.cs = src\Shared\Runtime\MemberSchema.cs
+		src\Shared\Runtime\RowFactory.cs = src\Shared\Runtime\RowFactory.cs
+		src\Shared\Runtime\TypedExpression.cs = src\Shared\Runtime\TypedExpression.cs
+		src\Shared\Runtime\WriterPipeline.cs = src\Shared\Runtime\WriterPipeline.cs
+		src\Shared\Runtime\WriterSink.cs = src\Shared\Runtime\WriterSink.cs
+		src\Shared\Runtime\README.md = src\Shared\Runtime\README.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Shared editor", "Shared editor", "{2271C75D-C3EE-4D01-9444-125C119B37E9}"
+	ProjectSection(SolutionItems) = preProject
+		src\Shared\Design\SchemaEditor.cs = src\Shared\Design\SchemaEditor.cs
+		src\Shared\Design\README.md = src\Shared\Design\README.md
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bonsai.Apache", "src\Bonsai.Apache\Bonsai.Apache.csproj", "{A4AE0B2B-F561-47C5-BD1A-5AE457516CE2}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C4D5E6F7-A8B9-0123-CDEF-234567890123}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C4D5E6F7-A8B9-0123-CDEF-234567890123}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C4D5E6F7-A8B9-0123-CDEF-234567890123}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C4D5E6F7-A8B9-0123-CDEF-234567890123}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B2C3D4E5-F6A7-8901-BCDE-F12345678901}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B2C3D4E5-F6A7-8901-BCDE-F12345678901}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B2C3D4E5-F6A7-8901-BCDE-F12345678901}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B2C3D4E5-F6A7-8901-BCDE-F12345678901}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E0BE03F4-D0F5-44AC-BDBB-C99747BA47BA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E0BE03F4-D0F5-44AC-BDBB-C99747BA47BA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E0BE03F4-D0F5-44AC-BDBB-C99747BA47BA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E0BE03F4-D0F5-44AC-BDBB-C99747BA47BA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5DD15C3C-F1A3-4C2D-8B5A-1D94819F1B6D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5DD15C3C-F1A3-4C2D-8B5A-1D94819F1B6D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5DD15C3C-F1A3-4C2D-8B5A-1D94819F1B6D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5DD15C3C-F1A3-4C2D-8B5A-1D94819F1B6D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8DC04B45-D8C5-43C1-A6C8-3FC1C64A3028}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8DC04B45-D8C5-43C1-A6C8-3FC1C64A3028}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8DC04B45-D8C5-43C1-A6C8-3FC1C64A3028}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8DC04B45-D8C5-43C1-A6C8-3FC1C64A3028}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A4AE0B2B-F561-47C5-BD1A-5AE457516CE2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A4AE0B2B-F561-47C5-BD1A-5AE457516CE2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A4AE0B2B-F561-47C5-BD1A-5AE457516CE2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A4AE0B2B-F561-47C5-BD1A-5AE457516CE2}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {D4E5F6A7-B8C9-0123-DEF0-234567890123}
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{0F692ADA-C2A5-4310-AE74-6CA21A2C19C7} = {FF108BC1-87AB-4945-8376-EDBA4AD046E8}
+		{2271C75D-C3EE-4D01-9444-125C119B37E9} = {FF108BC1-87AB-4945-8376-EDBA4AD046E8}
+		{A1B2C3D4-E5F6-7890-ABCD-EF1234567890} = {FF108BC1-87AB-4945-8376-EDBA4AD046E8}
+		{C4D5E6F7-A8B9-0123-CDEF-234567890123} = {FF108BC1-87AB-4945-8376-EDBA4AD046E8}
+		{B2C3D4E5-F6A7-8901-BCDE-F12345678901} = {FF108BC1-87AB-4945-8376-EDBA4AD046E8}
+		{E0BE03F4-D0F5-44AC-BDBB-C99747BA47BA} = {FF108BC1-87AB-4945-8376-EDBA4AD046E8}
+		{5DD15C3C-F1A3-4C2D-8B5A-1D94819F1B6D} = {FF108BC1-87AB-4945-8376-EDBA4AD046E8}
+		{8DC04B45-D8C5-43C1-A6C8-3FC1C64A3028} = {FF108BC1-87AB-4945-8376-EDBA4AD046E8}
+		{A4AE0B2B-F561-47C5-BD1A-5AE457516CE2} = {FF108BC1-87AB-4945-8376-EDBA4AD046E8}
+	EndGlobalSection
+EndGlobal

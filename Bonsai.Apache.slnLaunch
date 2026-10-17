@@ -1,0 +1,11 @@
+[
+  {
+    "Name": "Bonsai (all libraries)",
+    "Projects": [
+      {
+        "Path": "src\\Bonsai.Apache\\Bonsai.Apache.csproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]

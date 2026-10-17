@@ -55,8 +55,8 @@
       "baseUrl": "https://bonsai-rx.org/Bonsai.Parquet"
     },
     "globalMetadata": {
-      "_appName": "Bonsai.Parquet",
-      "_appTitle": "Bonsai.Parquet",
+      "_appName": "Bonsai.Apache",
+      "_appTitle": "Bonsai.Apache",
       "_appFooter": "&copy; Bonsai Foundation CIC and Contributors. Made with <a href=\"https://dotnet.github.io/docfx\">docfx</a>",
       "_enableNewTab": true,
       "_enableSearch": true,

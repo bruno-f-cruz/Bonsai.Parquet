@@ -1,0 +1,6 @@
+<RunSettings>
+  <RunConfiguration>
+    <!-- Required for MSTest discovery with Arrow 23's newer System.Memory assembly on .NET Framework. -->
+    <DisableAppDomain>true</DisableAppDomain>
+  </RunConfiguration>
+</RunSettings>
