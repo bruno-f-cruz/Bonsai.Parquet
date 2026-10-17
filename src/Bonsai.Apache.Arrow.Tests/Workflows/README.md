@@ -1,6 +1,6 @@
 # Arrow and Parquet workflow tests
 
-Select **Bonsai (all libraries)** in Visual Studio and press F5 to open
+Set `Bonsai.Apache` as the startup project in Visual Studio and press F5 to open
 `api-tests.bonsai`. Press **Start** to run all nine examples. Each group returns
 a boolean; **Summary** is true when all pass.
 

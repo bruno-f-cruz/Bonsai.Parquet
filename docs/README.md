@@ -24,7 +24,7 @@ See [Writing Parquet](articles/writing-parquet.md),
 
 ## Development
 
-Open `Bonsai.Apache.sln`, select **Bonsai (all libraries)**, and press F5 to try
+Open `Bonsai.Apache.sln`, set `Bonsai.Apache` as the startup project, and press F5 to try
 both packages in the test workflow.
 
 ## License
