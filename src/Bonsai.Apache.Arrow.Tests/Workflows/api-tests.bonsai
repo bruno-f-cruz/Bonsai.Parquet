@@ -19,7 +19,7 @@
                 <parquet:Suffix>None</parquet:Suffix>
                 <parquet:Overwrite>true</parquet:Overwrite>
                 <parquet:CompressionMethod>Uncompressed</parquet:CompressionMethod>
-                <parquet:BatchSize>5</parquet:BatchSize>
+                <parquet:RowGroupSize>5</parquet:RowGroupSize>
                 <parquet:Buffered>true</parquet:Buffered>
                 <parquet:QueueCapacity>16</parquet:QueueCapacity>
                 <parquet:FlushInterval>PT0.05S</parquet:FlushInterval>
@@ -118,7 +118,7 @@
                 <parquet:Suffix>None</parquet:Suffix>
                 <parquet:Overwrite>true</parquet:Overwrite>
                 <parquet:CompressionMethod>Uncompressed</parquet:CompressionMethod>
-                <parquet:BatchSize>5</parquet:BatchSize>
+                <parquet:RowGroupSize>5</parquet:RowGroupSize>
                 <parquet:Buffered>true</parquet:Buffered>
                 <parquet:QueueCapacity>16</parquet:QueueCapacity>
                 <parquet:FlushInterval>PT0.05S</parquet:FlushInterval>
@@ -233,7 +233,7 @@
                 <parquet:Overwrite>true</parquet:Overwrite>
                 <parquet:Selector>Index,Inner.Value</parquet:Selector>
                 <parquet:CompressionMethod>Uncompressed</parquet:CompressionMethod>
-                <parquet:BatchSize>5</parquet:BatchSize>
+                <parquet:RowGroupSize>5</parquet:RowGroupSize>
                 <parquet:Buffered>true</parquet:Buffered>
                 <parquet:QueueCapacity>16</parquet:QueueCapacity>
                 <parquet:FlushInterval>PT0.05S</parquet:FlushInterval>
@@ -342,7 +342,7 @@
                 <parquet:Suffix>None</parquet:Suffix>
                 <parquet:Overwrite>true</parquet:Overwrite>
                 <parquet:CompressionMethod>Uncompressed</parquet:CompressionMethod>
-                <parquet:BatchSize>5</parquet:BatchSize>
+                <parquet:RowGroupSize>5</parquet:RowGroupSize>
                 <parquet:Buffered>true</parquet:Buffered>
                 <parquet:QueueCapacity>16</parquet:QueueCapacity>
                 <parquet:FlushInterval>PT0.05S</parquet:FlushInterval>
@@ -444,7 +444,7 @@
                 <parquet:Suffix>None</parquet:Suffix>
                 <parquet:Overwrite>true</parquet:Overwrite>
                 <parquet:CompressionMethod>Uncompressed</parquet:CompressionMethod>
-                <parquet:BatchSize>5</parquet:BatchSize>
+                <parquet:RowGroupSize>5</parquet:RowGroupSize>
                 <parquet:Buffered>true</parquet:Buffered>
                 <parquet:QueueCapacity>16</parquet:QueueCapacity>
                 <parquet:FlushInterval>PT0.05S</parquet:FlushInterval>
@@ -546,7 +546,7 @@
                 <parquet:Suffix>None</parquet:Suffix>
                 <parquet:Overwrite>true</parquet:Overwrite>
                 <parquet:CompressionMethod>Uncompressed</parquet:CompressionMethod>
-                <parquet:BatchSize>5</parquet:BatchSize>
+                <parquet:RowGroupSize>5</parquet:RowGroupSize>
                 <parquet:Buffered>true</parquet:Buffered>
                 <parquet:QueueCapacity>16</parquet:QueueCapacity>
                 <parquet:FlushInterval>PT0.05S</parquet:FlushInterval>
@@ -646,7 +646,7 @@
                 <parquet:Suffix>None</parquet:Suffix>
                 <parquet:Overwrite>true</parquet:Overwrite>
                 <parquet:CompressionMethod>Uncompressed</parquet:CompressionMethod>
-                <parquet:BatchSize>5</parquet:BatchSize>
+                <parquet:RowGroupSize>5</parquet:RowGroupSize>
                 <parquet:Buffered>true</parquet:Buffered>
                 <parquet:QueueCapacity>16</parquet:QueueCapacity>
                 <parquet:FlushInterval>PT0.05S</parquet:FlushInterval>
@@ -746,7 +746,7 @@
                 <parquet:Suffix>None</parquet:Suffix>
                 <parquet:Overwrite>true</parquet:Overwrite>
                 <parquet:CompressionMethod>Zstd</parquet:CompressionMethod>
-                <parquet:BatchSize>5</parquet:BatchSize>
+                <parquet:RowGroupSize>5</parquet:RowGroupSize>
                 <parquet:Buffered>true</parquet:Buffered>
                 <parquet:QueueCapacity>16</parquet:QueueCapacity>
                 <parquet:FlushInterval>PT0.05S</parquet:FlushInterval>
@@ -867,7 +867,7 @@
                 <parquet:Suffix>None</parquet:Suffix>
                 <parquet:Overwrite>true</parquet:Overwrite>
                 <parquet:CompressionMethod>Uncompressed</parquet:CompressionMethod>
-                <parquet:BatchSize>5</parquet:BatchSize>
+                <parquet:RowGroupSize>5</parquet:RowGroupSize>
                 <parquet:Buffered>true</parquet:Buffered>
                 <parquet:QueueCapacity>16</parquet:QueueCapacity>
                 <parquet:FlushInterval>PT0.05S</parquet:FlushInterval>

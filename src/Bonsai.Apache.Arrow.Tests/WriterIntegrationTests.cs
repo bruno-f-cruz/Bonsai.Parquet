@@ -32,7 +32,7 @@ namespace Bonsai.Apache.Arrow.Tests
                 FlushInterval = TimeSpan.FromMilliseconds(flushMilliseconds)
             } : new Parquet.ParquetWriter
             {
-                FileName = path, Buffered = buffered, BatchSize = batchSize,
+                FileName = path, Buffered = buffered, RowGroupSize = batchSize,
                 QueueCapacity = 2048,
                 FlushInterval = TimeSpan.FromMilliseconds(flushMilliseconds)
             };
@@ -236,8 +236,10 @@ namespace Bonsai.Apache.Arrow.Tests
         {
             var arrow = new ArrowWriter();
             var parquet = new Parquet.ParquetWriter();
-            var properties = typeof(WriterOptions).GetProperties().OrderBy(p => p.Name).ToArray();
-            var other = typeof(Parquet.WriterOptions).GetProperties().OrderBy(p => p.Name).ToArray();
+            var properties = typeof(WriterOptions).GetProperties().Where(p => p.Name != nameof(ArrowWriter.BatchSize)).OrderBy(p => p.Name).ToArray();
+            Assert.AreEqual(100_000, arrow.BatchSize);
+            Assert.AreEqual(100_000, parquet.RowGroupSize);
+            var other = typeof(Parquet.WriterOptions).GetProperties().Where(p => p.Name != nameof(Parquet.ParquetWriter.RowGroupSize)).OrderBy(p => p.Name).ToArray();
             CollectionAssert.AreEqual(properties.Select(p => p.Name).ToArray(), other.Select(p => p.Name).ToArray());
             for (int i = 0; i < properties.Length; i++)
             {
@@ -256,6 +258,8 @@ namespace Bonsai.Apache.Arrow.Tests
             using var text = new StringWriter();
             WorkflowBuilder.Serializer.Serialize(text, workflow);
             Assert.IsTrue(text.ToString().Contains("PT0.123S"));
+            StringAssert.Contains(text.ToString(), "BatchSize");
+            StringAssert.Contains(text.ToString(), "RowGroupSize");
             using var xml = XmlReader.Create(new StringReader(text.ToString()));
             var restored = (WorkflowBuilder)WorkflowBuilder.Serializer.Deserialize(xml)!;
             foreach (var node in restored.Workflow)
@@ -263,7 +267,7 @@ namespace Bonsai.Apache.Arrow.Tests
                 var writer = ((CombinatorBuilder)node.Value).Combinator;
                 Assert.AreEqual(TimeSpan.FromMilliseconds(123), writer.GetType().GetProperty("FlushInterval")!.GetValue(writer));
                 Assert.AreEqual(true, writer.GetType().GetProperty("Buffered")!.GetValue(writer));
-                Assert.AreEqual(13, writer.GetType().GetProperty("BatchSize")!.GetValue(writer));
+                Assert.AreEqual(13, writer.GetType().GetProperty(writer is ArrowWriter ? "BatchSize" : "RowGroupSize")!.GetValue(writer));
                 Assert.AreEqual(2048, writer.GetType().GetProperty("QueueCapacity")!.GetValue(writer));
 
             }

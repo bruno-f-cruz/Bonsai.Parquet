@@ -23,7 +23,7 @@ namespace Bonsai.Apache.Arrow.Tests
             if (format == "Arrow")
                 new ArrowWriter { FileName = path, Buffered = false, BatchSize = 5 }.Process(source).Wait();
             else
-                new Parquet.ParquetWriter { FileName = path, Buffered = false, BatchSize = 5 }.Process(source).Wait();
+                new Parquet.ParquetWriter { FileName = path, Buffered = false, RowGroupSize = 5 }.Process(source).Wait();
         }
 
         IObservable<int> Read(string format, int batchSize, string name = "Value", bool duplicate = false)

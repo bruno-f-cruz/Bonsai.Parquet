@@ -31,7 +31,7 @@ namespace Bonsai.Apache.Parquet
                 {
                     PathHelper.EnsureDirectory(options.Path);
                     var writer = new ParquetBatchWriter<TSource>(options.Path, plan,
-                        compression, options.BatchSize, options.Overwrite);
+                        compression, options.RowGroupSize, options.Overwrite);
                     return new WriterSink<TSource>(writer.Write, writer.Flush, writer.Dispose);
                 });
             });

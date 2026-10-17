@@ -31,7 +31,7 @@ namespace Bonsai.Apache.Parquet.Tests
 
         static void Write<T>(string path, IEnumerable<T> rows, int rowGroupSize = 100_000, bool overwrite = true)
         {
-            var writer = new ParquetWriter { Buffered = false, FileName = path, Overwrite = overwrite, BatchSize = rowGroupSize };
+            var writer = new ParquetWriter { Buffered = false, FileName = path, Overwrite = overwrite, RowGroupSize = rowGroupSize };
             writer.Process(rows.ToObservable()).DefaultIfEmpty().Wait();
         }
 

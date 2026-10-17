@@ -34,7 +34,7 @@ Use `Selector` to choose columns:
 | Property | Default | Description |
 | --- | --- | --- |
 | `CompressionMethod` | `Snappy` | Compression codec; also supports Uncompressed, Gzip, Brotli, and Zstd. |
-| `BatchSize` | `100000` | Rows per row group. |
+| `RowGroupSize` | `100000` | Rows per row group. |
 | `Buffered` | `true` | Write on a background worker. |
 | `QueueCapacity` | `1024` | Maximum pending inputs; a full queue reports an error. |
 | `FlushInterval` | `00:00:05` | Flush partial batches in background mode; zero disables it. |

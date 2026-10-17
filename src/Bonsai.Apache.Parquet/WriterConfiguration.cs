@@ -9,7 +9,7 @@ namespace Bonsai.Apache.Parquet
     {
         internal readonly string Path;
         internal readonly string? Selector;
-        internal readonly int BatchSize;
+        internal readonly int RowGroupSize;
         internal readonly bool Overwrite, Buffered;
         internal readonly int QueueCapacity;
         internal readonly TimeSpan FlushInterval;
@@ -17,7 +17,7 @@ namespace Bonsai.Apache.Parquet
         internal WriterConfiguration(WriterOptions options)
         {
             if (string.IsNullOrEmpty(options.FileName)) throw new InvalidOperationException("A valid file path must be specified.");
-            if (options.BatchSize <= 0) throw new InvalidOperationException("BatchSize must be greater than zero.");
+            if (options.RowGroupSize <= 0) throw new InvalidOperationException("RowGroupSize must be greater than zero.");
             if (options.QueueCapacity <= 0) throw new InvalidOperationException("QueueCapacity must be greater than zero.");
             if (options.FlushInterval < TimeSpan.Zero ||
                 (options.FlushInterval > TimeSpan.Zero && options.FlushInterval.TotalMilliseconds < 1) ||
@@ -26,7 +26,7 @@ namespace Bonsai.Apache.Parquet
             Path = PathHelper.AppendSuffix(options.FileName, options.Suffix);
             if (!options.Overwrite && File.Exists(Path)) throw new IOException($"The file '{Path}' already exists.");
             Selector = options.Selector;
-            BatchSize = options.BatchSize;
+            RowGroupSize = options.RowGroupSize;
             Overwrite = options.Overwrite;
             Buffered = options.Buffered;
             QueueCapacity = options.QueueCapacity;

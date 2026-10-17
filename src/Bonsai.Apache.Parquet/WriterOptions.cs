@@ -30,7 +30,7 @@ namespace Bonsai.Apache.Parquet
         /// <summary>Gets or sets the maximum rows per row group.</summary>
         [DefaultValue(100_000)]
         [Description("The maximum rows per row group.")]
-        public int BatchSize { get; set; } = 100_000;
+        public int RowGroupSize { get; set; } = 100_000;
 
         /// <summary>Gets or sets whether writing runs on a background worker.</summary>
         [DefaultValue(true)]

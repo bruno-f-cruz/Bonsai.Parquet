@@ -19,7 +19,7 @@ namespace Bonsai.Apache.Parquet.Tests
         public void Cleanup() { if (File.Exists(path)) File.Delete(path); }
 
         void Write<T>(IEnumerable<T> rows, int size = 2, string? selector = null)
-            => new ParquetWriter { Buffered = false, FileName = path, Overwrite = true, BatchSize = size, Selector = selector }
+            => new ParquetWriter { Buffered = false, FileName = path, Overwrite = true, RowGroupSize = size, Selector = selector }
                 .Process(rows.ToObservable()).DefaultIfEmpty().Wait();
 
         T[] Read<T>(int index = 0)
@@ -46,7 +46,7 @@ namespace Bonsai.Apache.Parquet.Tests
             var expected = Enumerable.Range(0, 20).ToArray();
             var writer = new ParquetWriter
             {
-                FileName = path, CompressionMethod = compression, BatchSize = 5,
+                FileName = path, CompressionMethod = compression, RowGroupSize = 5,
                 Buffered = true, QueueCapacity = 32
             };
             writer.Process(expected.ToObservable()).Timeout(TimeSpan.FromSeconds(5)).Wait();

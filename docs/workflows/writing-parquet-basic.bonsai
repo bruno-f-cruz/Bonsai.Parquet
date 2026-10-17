@@ -18,7 +18,7 @@
           <parquet:Suffix>None</parquet:Suffix>
           <parquet:Overwrite>true</parquet:Overwrite>
           <parquet:CompressionMethod>Zstd</parquet:CompressionMethod>
-          <parquet:BatchSize>100000</parquet:BatchSize>
+          <parquet:RowGroupSize>100000</parquet:RowGroupSize>
         </Combinator>
       </Expression>
     </Nodes>
